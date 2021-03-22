@@ -52,12 +52,10 @@ struct PipelineTasks
     end
 end
 
-struct
-
-
 
 struct PipelineInput
     data_path::String
+    tree_path::String
     labels_path::String
 
 
@@ -68,6 +66,5 @@ struct PipelineInput
     selection_mcmc::MCMCOptions
     final_mcmc::MCMCOptions
 end
-
 
 end

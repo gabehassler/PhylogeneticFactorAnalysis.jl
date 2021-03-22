@@ -1,6 +1,4 @@
 using PhylogeneticFactorAnalysis
-using Test
+using Test, SafeTestsets
 
-@testset "PhylogeneticFactorAnalysis.jl" begin
-    # Write your tests here.
-end
+@time @safetestset "First test" begin include("test.jl") end
