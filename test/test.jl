@@ -19,7 +19,7 @@ newick_path = joinpath(@__DIR__, "test_newick.txt")
 
 dummy_files = [data_path, newick_path]
 
-throw_error_if_exists.(dummy_files)
+# throw_error_if_exists.(dummy_files)
 
 
 
@@ -39,8 +39,8 @@ CSV.write(data_path, data)
 
 write(newick_path, writeTopology(rtree(taxa, ultrametric=true)))
 
-msp = PhylogeneticFactorAnalysis.ModelSelectionProvider([1, 2, 3], Float64[], 5)
-prior = PhylogeneticFactorAnalysis.IIDPrior()
+msp = PhylogeneticFactorAnalysis.ModelSelectionProvider([1, 2, 3], Float64[], 5, ["CLPD"])
+prior = PhylogeneticFactorAnalysis.IIDPrior("none")
 tasks = PhylogeneticFactorAnalysis.PipelineTasks()
 
 
@@ -49,7 +49,9 @@ selection_mcmc = MCMCOptions()
 final_mcmc = MCMCOptions()
 
 pipeline_input = PhylogeneticFactorAnalysis.PipelineInput(
-            data_path, newick_path, "", msp, prior, tasks,
-            selection_mcmc, final_mcmc)
+            "test",
+            data_path, newick_path, msp, prior)
+
+PhylogeneticFactorAnalysis.run_pipeline(pipeline_input)
 
 rm.(dummy_files);
