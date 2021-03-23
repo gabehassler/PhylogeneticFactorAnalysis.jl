@@ -38,7 +38,7 @@ struct IIDPrior <: PriorParameters
 end
 
 struct ShrinkagePrior <: PriorParameters
-    multiplier::Float64
+    multiplier::Float64 #TODO: remove?
     shrink_by::String
     fix_first::Bool
     shrink_first::Bool

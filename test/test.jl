@@ -39,8 +39,11 @@ CSV.write(data_path, data)
 
 write(newick_path, writeTopology(rtree(taxa, ultrametric=true)))
 
-msp = PhylogeneticFactorAnalysis.ModelSelectionProvider([1, 2, 3], Float64[], 5, ["CLPD"])
-prior = PhylogeneticFactorAnalysis.IIDPrior("none")
+iid_msp = PhylogeneticFactorAnalysis.ModelSelectionProvider([1, 2, 3], Float64[], 2, ["CLPD"])
+iid_prior = PhylogeneticFactorAnalysis.IIDPrior("none")
+
+shrinkage_msp = PhylogeneticFactorAnalysis.ModelSelectionProvider([3, 3, 3], [10.0, 100.0, 1000.0], 2, ["CLPD"])
+shrinkage_prior = PhylogeneticFactorAnalysis.ShrinkagePrior(NaN, "shape", true, false, true)
 tasks = PhylogeneticFactorAnalysis.PipelineTasks()
 
 
@@ -48,10 +51,17 @@ tasks = PhylogeneticFactorAnalysis.PipelineTasks()
 selection_mcmc = MCMCOptions()
 final_mcmc = MCMCOptions()
 
-pipeline_input = PhylogeneticFactorAnalysis.PipelineInput(
-            "test",
-            data_path, newick_path, msp, prior)
+iid_input = PhylogeneticFactorAnalysis.PipelineInput(
+            "iid",
+            data_path, newick_path, iid_msp, iid_prior)
 
-PhylogeneticFactorAnalysis.run_pipeline(pipeline_input)
+shrink_input = PhylogeneticFactorAnalysis.PipelineInput(
+            "shrink",
+            data_path, newick_path, shrinkage_msp, shrinkage_prior)
+
+
+PhylogeneticFactorAnalysis.run_pipeline(iid_input)
+PhylogeneticFactorAnalysis.run_pipeline(shrink_input)
+
 
 rm.(dummy_files);
