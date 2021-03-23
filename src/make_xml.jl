@@ -1,9 +1,3 @@
-# struct TreeData
-#     taxa::Vector{String}
-#     data::Matrix{Float64}
-#     newick::String
-# end
-
 const MSE_STAT = "MSE"
 const LPD_COND = "CLPD"
 # const LPD_MARG = "MLPD"
@@ -38,8 +32,9 @@ function make_training_xml(input::PipelineInput, training_data::Matrix{Float64},
 
     add_validation(bx, validation_data, model_selection.statistics)
 
-    filename = join([name, "model$model", "r$rep"], '_')
-    BEASTXMLConstructor.save_xml(filename, bx)
+    filename = xml_name(input, model = model, rep = rep)
+    path = BEASTXMLConstructor.save_xml(filename, bx)
+    return filename
 end
 
 function add_validation(bx::BEASTXMLElement, validation_data::Matrix{Float64}, statistics::Vector{String})

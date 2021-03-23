@@ -4,6 +4,7 @@ using BEASTXMLConstructor, Random, BEASTTreeUtils, CSV, DataFrames
 
 Random.seed!(666)
 
+const CLEAN = true
 
 
 
@@ -39,29 +40,44 @@ CSV.write(data_path, data)
 
 write(newick_path, writeTopology(rtree(taxa, ultrametric=true)))
 
-iid_msp = PhylogeneticFactorAnalysis.ModelSelectionProvider([1, 2, 3], Float64[], 2, ["CLPD"])
+iid_msp = PhylogeneticFactorAnalysis.ModelSelectionProvider([1, 2, 3], Float64[], 2)
 iid_prior = PhylogeneticFactorAnalysis.IIDPrior("none")
 
-shrinkage_msp = PhylogeneticFactorAnalysis.ModelSelectionProvider([3, 3, 3], [10.0, 100.0, 1000.0], 2, ["CLPD"])
+shrinkage_msp = PhylogeneticFactorAnalysis.ModelSelectionProvider([3, 3, 3], [10.0, 100.0, 1000.0], 2)
 shrinkage_prior = PhylogeneticFactorAnalysis.ShrinkagePrior(NaN, "shape", true, false, true)
 tasks = PhylogeneticFactorAnalysis.PipelineTasks()
 
 
 
-selection_mcmc = MCMCOptions()
+selection_mcmc = MCMCOptions(chain_length = 100)
 final_mcmc = MCMCOptions()
 
 iid_input = PhylogeneticFactorAnalysis.PipelineInput(
             "iid",
-            data_path, newick_path, iid_msp, iid_prior)
+            data_path, newick_path, iid_msp, iid_prior,
+            selection_mcmc = selection_mcmc, overwrite = true)
 
 shrink_input = PhylogeneticFactorAnalysis.PipelineInput(
             "shrink",
-            data_path, newick_path, shrinkage_msp, shrinkage_prior)
+            data_path, newick_path, shrinkage_msp, shrinkage_prior,
+            selection_mcmc = selection_mcmc)
 
+try
+    PhylogeneticFactorAnalysis.run_pipeline(iid_input)
+    PhylogeneticFactorAnalysis.run_pipeline(shrink_input)
+catch e
+    @error "Something went wrong" exception=(e, catch_backtrace())
+    cd(@__DIR__)
+end
 
-PhylogeneticFactorAnalysis.run_pipeline(iid_input)
-PhylogeneticFactorAnalysis.run_pipeline(shrink_input)
+cd(@__DIR__)
 
+if CLEAN
+    rm.(dummy_files);
+    for file in readdir()
+        if file[end-2:end] in ["xml", "txt", "log"]
+            rm(file)
+        end
+    end
+end
 
-rm.(dummy_files);
