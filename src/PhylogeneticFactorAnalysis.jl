@@ -42,6 +42,7 @@ struct ShrinkagePrior <: PriorParameters
     shrink_by::String
     fix_first::Bool
     shrink_first::Bool
+    force_ordered::Bool
 end
 
 struct PipelineTasks
@@ -82,6 +83,7 @@ struct PipelineInput
     tree_path::String
     labels_path::String
     trait_data::TraitData
+    newick::String
 
 
     model_selection::ModelSelectionProvider
@@ -105,7 +107,8 @@ struct PipelineInput
                            standardize_data::Bool = true
                            )
         td = csv_to_traitdata(data_path)
-        return new(name, data_path, tree_path, labels_path, td,
+        newick = read(tree_path, String)
+        return new(name, data_path, tree_path, labels_path, td, newick,
                    model_selection,
                    prior,
                    tasks,
@@ -168,9 +171,7 @@ function make_selection_xml(input::PipelineInput)
         training_data .= validation_data
         training_data[findall(x -> x == r, assignments)] .= NaN
         for m = 1:length(model_selection)
-            make_xml(name, trait_data, validation_data, newick, model_selection,
-                     prior, selection_mcmc, m, r,
-                     log_factors = false, standardize = false)
+            make_training_xml(input, training_data, validation_data, m, r, standardize = false)
         end
     end
 end
