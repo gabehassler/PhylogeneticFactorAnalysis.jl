@@ -53,7 +53,7 @@ struct ShrinkagePrior <: PriorParameters
     force_ordered::Bool
 end
 
-struct PipelineTasks
+mutable struct PipelineTasks
     make_selection_xml::Bool
     run_selection_xml::Bool
     record_selection_stats::Bool
@@ -139,6 +139,7 @@ struct PipelineInput
     end
 end
 
+include("paths.jl")
 include("make_xml.jl")
 
 function run_pipeline(input::PipelineInput)
@@ -162,12 +163,20 @@ function run_pipeline(input::PipelineInput)
     if tasks.make_selection_xml
         make_selection_xml(input)
     end
+
     if tasks.run_selection_xml
         run_selection_xml(input)
     end
+
     if tasks.record_selection_stats && !tasks.run_selection_xml
-        #TODO
+        m, r = size(input.model_selection)
+        for i = 1:r
+            for j = 1:m
+                process_selection_statistics(input, j, i)
+            end
+        end
     end
+
     if tasks.make_final_xml
         #TODO
     end
@@ -185,62 +194,6 @@ function run_pipeline(input::PipelineInput)
     end
 end
 
-function basedir(input::PipelineInput)
-    return joinpath(input.directory, input.name)
-end
-
-function statistics_dir(input::PipelineInput)
-    return basedir(input)
-end
-
-function get_stat_path(input::PipelineInput, stat::String)
-    return joinpath(statistics_dir(input), "$stat.csv")
-end
-
-function selection_xml_dir(input::PipelineInput)
-    return joinpath(basedir(input), "selection_xml")
-end
-
-function selection_xml_path(input::PipelineInput; kwargs...)
-    return joinpath(selection_xml_dir(input), xml_name(input; kwargs...))
-end
-
-function selection_log_dir(input::PipelineInput)
-    return joinpath(basedir(input), "selection_logs")
-end
-
-function selection_log_path(input::PipelineInput; kwargs...)
-    return joinpath(selection_log_dir(input), log_name(input; kwargs...))
-end
-
-function timer_dir(input::PipelineInput)
-    return joinpath(basedir(input), "timing_files")
-end
-
-function timer_path(input::PipelineInput; kwargs...)
-    return joinpath(timer_dir(input), timer_name(input; kwargs...))
-end
-
-
-function basename(input::PipelineInput; model::Int = 0, rep::Int = 0)
-    if model == 0 && rep == 0
-        return input.name
-    end
-
-    return join([input.name, "model$model", "rep$rep"], '_')
-end
-
-function xml_name(input::PipelineInput; kwargs...)
-    return basename(input; kwargs...) * ".xml"
-end
-
-function log_name(input::PipelineInput; kwargs...)
-    return basename(input; kwargs...) * ".log"
-end
-
-function timer_name(input::PipelineInput; kwargs...)
-    return basename(input; kwargs...) * "_timer.txt"
-end
 
 function make_selection_xml(input::PipelineInput)
     @unpack model_selection, trait_data, name, prior, selection_mcmc = input
@@ -291,7 +244,7 @@ function run_selection_xml(input::PipelineInput)
             mv(timer_filename, tp, force = input.overwrite)
 
             if input.tasks.record_selection_stats
-                process_seleciton_statistics(input, m, r)
+                process_selection_statistics(input, m, r)
             end
         end
     end
@@ -311,7 +264,7 @@ function check_stats_exist(input::PipelineInput)
     end
 end
 
-function process_seleciton_statistics(input::PipelineInput, model::Int, rep::Int)
+function process_selection_statistics(input::PipelineInput, model::Int, rep::Int)
     @unpack model_selection = input
 
     log_path = selection_log_path(input, model = model, rep = rep)

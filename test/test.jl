@@ -65,6 +65,9 @@ shrink_input = PhylogeneticFactorAnalysis.PipelineInput(
 try
     PhylogeneticFactorAnalysis.run_pipeline(iid_input)
     PhylogeneticFactorAnalysis.run_pipeline(shrink_input)
+
+    iid_input.tasks.run_selection_xml = false
+    PhylogeneticFactorAnalysis.run_pipeline(iid_input)
 catch e
     @error "Something went wrong" exception=(e, catch_backtrace())
     cd(@__DIR__)
