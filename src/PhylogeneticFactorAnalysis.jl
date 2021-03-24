@@ -1,6 +1,6 @@
 module PhylogeneticFactorAnalysis
 
-using BEASTXMLConstructor, BeastUtils.DataStorage, BeastUtils.MatrixUtils, BeastUtils.RunBeast, BeastUtils.Logs,
+using BEASTXMLConstructor, BeastUtils.DataStorage, BeastUtils.MatrixUtils, BeastUtils.RunBeast, BeastUtils.Logs, PosteriorSummary
       UnPack, Random, DataFrames, CSV, Statistics
 
 
@@ -92,13 +92,27 @@ mutable struct PipelineTasks
     end
 end
 
+struct PlotAttributes
+    burnin::Float64
+    hpd_alpha::Float64
+    scale_loadings_by_factors::Bool
+
+    function PlotAttributes(;
+                            burnin::Float64 = 0.1,
+                            hpd_alpha::Float64 = 0.05,
+                            scale_loadings_by_factors::Bool = true
+                            )
+        return new(burnin, hpd_alpha, scale_loadings_by_factors)
+    end
+end
+
 
 struct PipelineInput
     name::String
     directory::String
     data_path::String
     tree_path::String
-    labels_path::String
+    labels_path::String #TODO: move to plot_attrs
     trait_data::TraitData
     newick::String
 
@@ -114,6 +128,7 @@ struct PipelineInput
     beast_seed::Int
 
     overwrite::Bool
+    plot_attrs::PlotAttributes
 
 
     function PipelineInput(name::String,
@@ -129,7 +144,8 @@ struct PipelineInput
                            julia_seed::Int = Int(rand(UInt32)),
                            beast_seed::Int = -1,
                            directory = pwd(),
-                           overwrite::Bool = false
+                           overwrite::Bool = false,
+                           plot_attrs::PlotAttributes = PlotAttributes()
                            )
         td = csv_to_traitdata(data_path)
         newick = read(tree_path, String)
@@ -143,12 +159,14 @@ struct PipelineInput
                    standardize_data,
                    julia_seed,
                    beast_seed,
-                   overwrite)
+                   overwrite,
+                   plot_attrs)
     end
 end
 
 include("paths.jl")
 include("make_xml.jl")
+include("plotting.jl")
 
 function run_pipeline(input::PipelineInput)
 
@@ -195,20 +213,18 @@ function run_pipeline(input::PipelineInput)
         process_final_logs(input)
     end
     if tasks.plot_loadings
-        #TODO
+        plot_loadings(input)
     end
     if tasks.plot_factors
         #TODO
     end
 end
 
-
-function process_final_logs(input::PipelineInput)
-    log_paths = final_log_paths(input)
-    processed_paths = processed_log_paths(input)
-
+function plot_loadings(input::PipelineInput)
+    log_paths = processed_log_paths(input)
+    stat_paths = statistic_paths(input)
     for i = 1:length(log_paths)
-        svd_logs(log_paths[i], processed_paths[i])
+        prep_for_plotting(input, log_paths[i], stat_paths[i])
     end
 end
 
@@ -324,6 +340,16 @@ function run_final_xml(input::PipelineInput)
     xml_paths = final_xml_paths(input)
     for path in xml_paths
         RunBeast.run_beast(path, seed = input.beast_seed, overwrite = input.overwrite)
+    end
+end
+
+
+function process_final_logs(input::PipelineInput)
+    log_paths = final_log_paths(input)
+    processed_paths = processed_log_paths(input)
+
+    for i = 1:length(log_paths)
+        svd_logs(log_paths[i], processed_paths[i], rotate_factors = true)
     end
 end
 

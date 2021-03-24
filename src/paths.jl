@@ -52,6 +52,10 @@ function processed_log_paths(input::PipelineInput)
     final_paths_helper(input, "_processed.log")
 end
 
+function statistic_paths(input::PipelineInput)
+    final_paths_helper(input, "_statistics.csv")
+end
+
 
 function basename(input::PipelineInput; model::Int = 0, rep::Int = 0, stat="")
     name = input.name
