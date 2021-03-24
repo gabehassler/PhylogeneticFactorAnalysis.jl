@@ -34,9 +34,22 @@ function timer_path(input::PipelineInput; kwargs...)
     return joinpath(timer_dir(input), timer_name(input; kwargs...))
 end
 
-function final_xml_paths(input::PipelineInput)
+
+function final_paths_helper(input::PipelineInput, extension::String)
     basenames = keys(input.model_selection.final_names)
-    return [x * ".xml" for x in basenames]
+    return [x * extension for x in basenames]
+end
+
+function final_xml_paths(input::PipelineInput)
+    final_paths_helper(input, ".xml")
+end
+
+function final_log_paths(input::PipelineInput)
+    final_paths_helper(input, ".log")
+end
+
+function processed_log_paths(input::PipelineInput)
+    final_paths_helper(input, "_processed.log")
 end
 
 

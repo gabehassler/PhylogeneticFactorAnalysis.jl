@@ -4,6 +4,10 @@ using BEASTXMLConstructor, BeastUtils.DataStorage, BeastUtils.MatrixUtils, Beast
       UnPack, Random, DataFrames, CSV, Statistics
 
 
+include("PostProcessing.jl")
+using PhylogeneticFactorAnalysis.PostProcessing
+
+
 ModelStat = NamedTuple{(:model, :statistics),Tuple{Int64,Array{String,1}}}
 
 struct ModelSelectionProvider
@@ -188,7 +192,7 @@ function run_pipeline(input::PipelineInput)
         run_final_xml(input)
     end
     if tasks.process_final_log
-        #TODO
+        process_final_logs(input)
     end
     if tasks.plot_loadings
         #TODO
@@ -198,6 +202,15 @@ function run_pipeline(input::PipelineInput)
     end
 end
 
+
+function process_final_logs(input::PipelineInput)
+    log_paths = final_log_paths(input)
+    processed_paths = processed_log_paths(input)
+
+    for i = 1:length(log_paths)
+        svd_logs(log_paths[i], processed_paths[i])
+    end
+end
 
 function make_selection_xml(input::PipelineInput)
     @unpack model_selection, trait_data, name, prior, selection_mcmc = input
