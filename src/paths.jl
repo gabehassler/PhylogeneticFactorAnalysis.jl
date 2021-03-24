@@ -35,12 +35,20 @@ function timer_path(input::PipelineInput; kwargs...)
 end
 
 
-function basename(input::PipelineInput; model::Int = 0, rep::Int = 0)
-    if model == 0 && rep == 0
-        return input.name
+function basename(input::PipelineInput; model::Int = 0, rep::Int = 0, stat="")
+    name = input.name
+
+    if model != 0
+        name = name * "_model$model"
+    end
+    if !isempty(stat)
+        name = name * "_$stat"
+    end
+    if rep != 0
+        name = name * "_rep$rep"
     end
 
-    return join([input.name, "model$model", "rep$rep"], '_')
+    return name
 end
 
 function xml_name(input::PipelineInput; kwargs...)

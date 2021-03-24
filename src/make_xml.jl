@@ -15,6 +15,31 @@ const BOTH = "both"
 
 const LOADINGS_WEIGHT = 3.0
 
+function set_common_options(bx::BEASTXMLElement, options::MCMCOptions; standardize::Bool = true)
+
+    set_options!(bx, options)
+    lgo = BEASTXMLConstructor.get_loadings_op(bx, component="matrix")
+    lgo.weight = LOADINGS_WEIGHT
+
+    facs = BEASTXMLConstructor.get_integratedFactorModel(bx)
+    facs.standardize_traits = standardize
+end
+
+
+function make_final_xml(input::PipelineInput, model::Int; statistic::String = "")
+
+    @unpack trait_data, newick, model_selection, prior, final_mcmc = input
+    @unpack data, taxa = trait_data
+
+    bx = make_initial_xml(data, taxa, newick, model_selection, prior, model, log_factors = true)
+    set_common_options(bx, final_mcmc, standardize = input.standardize_data)
+
+    filename = xml_name(input, stat=statistic)
+    path = BEASTXMLConstructor.save_xml(filename, bx)
+    return filename
+end
+
+
 function make_training_xml(input::PipelineInput, training_data::Matrix{Float64},
                            validation_data::Matrix{Float64},
                            model::Int, rep::Int; standardize::Bool = true)
@@ -22,13 +47,7 @@ function make_training_xml(input::PipelineInput, training_data::Matrix{Float64},
     @unpack name, trait_data, newick, model_selection, prior, selection_mcmc = input
     bx = make_initial_xml(training_data, trait_data.taxa, newick, model_selection, prior, model, log_factors = false)
 
-    set_options!(bx, selection_mcmc)
-
-    lgo = BEASTXMLConstructor.get_loadings_op(bx, component="matrix")
-    lgo.weight = LOADINGS_WEIGHT
-
-    facs = BEASTXMLConstructor.get_integratedFactorModel(bx)
-    facs.standardize_traits = standardize
+    set_common_options(bx, selection_mcmc, standardize = standardize)
 
     add_validation(bx, validation_data, model_selection.statistics)
 

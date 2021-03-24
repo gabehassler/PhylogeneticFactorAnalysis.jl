@@ -178,7 +178,7 @@ function run_pipeline(input::PipelineInput)
     end
 
     if tasks.make_final_xml
-        #TODO
+        make_final_xml(input)
     end
     if tasks.run_final_xml
         #TODO
@@ -279,7 +279,41 @@ function process_selection_statistics(input::PipelineInput, model::Int, rep::Int
     end
 end
 
+function make_final_xml(input::PipelineInput)
+    best_models = find_best_models(input)
+    stats = input.model_selection.statistics
+    n = length(best_models)
 
+    if n == 1 # just 1 selection statistic
+        make_final_xml(input, best_models[1])
+    else
+        for i = 1:n
+            model = best_models[i]
+            if model in best_models[1:(i - 1)] # we already have the xml for that model
+                error("not yet implemented")
+                # TODO
+            else
+                make_final_xml(input, model, statistic = stats[i])
+            end
+        end
+    end
+end
+
+function find_best_models(input::PipelineInput)
+    @unpack model_selection = input
+    @unpack statistics = model_selection
+
+    n = length(statistics)
+    best_models = fill(0, n)
+
+    for i = 1:n
+        stat = statistics[i]
+        X = Matrix(CSV.read(get_stat_path(input, stat), DataFrame))
+        u = vec(mean(X, dims=2)) * mult_dict[stat]
+        best_models[i] = findmax(u)[2]
+    end
+    return best_models
+end
 
 function compute_selection_statistics(log_path::String, model_selection::ModelSelectionProvider)
     cols, data = Logs.get_log(log_path, burnin = model_selection.burnin)
