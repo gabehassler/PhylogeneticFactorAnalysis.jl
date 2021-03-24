@@ -1,7 +1,7 @@
 module PhylogeneticFactorAnalysis
 
-using BEASTXMLConstructor, BeastUtils.DataStorage, BeastUtils.MatrixUtils, BeastUtils.RunBeast, BeastUtils.Logs, PosteriorSummary
-      UnPack, Random, DataFrames, CSV, Statistics
+using BEASTXMLConstructor, BeastUtils.DataStorage, BeastUtils.MatrixUtils, BeastUtils.RunBeast, BeastUtils.Logs, PosteriorSummary,
+      UnPack, Random, DataFrames, CSV, Statistics, RCall
 
 
 include("PostProcessing.jl")
@@ -225,6 +225,7 @@ function plot_loadings(input::PipelineInput)
     stat_paths = statistic_paths(input)
     for i = 1:length(log_paths)
         prep_for_plotting(input, log_paths[i], stat_paths[i])
+        load_plot(stat_paths[i], labels_path = input.labels_path)
     end
 end
 

@@ -1,28 +1,11 @@
 function prep_for_plotting(input::PipelineInput, log_path::String,
                             csv_path::String)
 
-    @unpack plot_attrs, labels_path, trait_data = input
+    @unpack plot_attrs, trait_data = input
     @unpack burnin, hpd_alpha, scale_loadings_by_factors = plot_attrs #TODO: just pass plot_attrs?
 
     cat_dict = Dict{String, String}()
     original_labels = trait_data.trait_names
-
-    if isempty(labels_path)
-        for label in original_labels
-            cat_dict[label] = "NA"
-        end
-    else
-        labels_df = CSV.read(labels_path, DataFrame)
-        for label in original_labels
-            ind = findall(isequal(label), labels_df.label)
-            @assert length(ind) == 1
-            ind = ind[1]
-
-            cat_dict[label] = df.category[ind]
-        end
-    end
-
-
 
     cols, data = get_log(log_path, burnin=burnin)
     L_header = "L"
@@ -40,8 +23,8 @@ function prep_for_plotting(input::PipelineInput, log_path::String,
 
     n = size(data, 1)
 
-    df = DataFrame([String, String, Int, Float64, Float64, Float64, Float64],
-                    ["trait", "cat", "factor", "L", "perc", "hpdu", "hpdl"],
+    df = DataFrame([String, Int, Float64, Float64, Float64, Float64],
+                    ["trait", "factor", "L", "perc", "hpdu", "hpdl"],
                     k * p)
 
     row_counts = zeros(Int, k)
@@ -69,7 +52,6 @@ function prep_for_plotting(input::PipelineInput, log_path::String,
             @assert L_cols[ind] == "$L_header$i$(j)"
 
             df.trait[ind] = original_labels[j]
-            df.cat[ind] = cat_dict[original_labels[j]]
             df.factor[ind] = i
 
             vals = @view(L_data[:, ind]) .* @view(stdev_adjustments[:, i])
@@ -94,4 +76,22 @@ function prep_for_plotting(input::PipelineInput, log_path::String,
     CSV.write(csv_path, df)
 
     return k_effective
+end
+
+function load_plot(statistics_path::String; labels_path::String = "")
+    @rput statistics_path
+
+    plots_path = joinpath(@__DIR__, "plots.R") # TODO: move elsewhere
+
+    if isempty(labels_path)
+        labels_path = missing
+    end
+
+    @rput plots_path
+    labels_array = [labels_path] # can't @rput missing directly
+    @rput labels_array
+    R"""
+    source(plots_path)
+    plot_loadings(statistics_path, "test.pdf", labels_path = labels_array[[1]])
+    """
 end
