@@ -34,6 +34,11 @@ function timer_path(input::PipelineInput; kwargs...)
     return joinpath(timer_dir(input), timer_name(input; kwargs...))
 end
 
+function final_xml_paths(input::PipelineInput)
+    basenames = keys(input.model_selection.final_names)
+    return [x * ".xml" for x in basenames]
+end
+
 
 function basename(input::PipelineInput; model::Int = 0, rep::Int = 0, stat="")
     name = input.name
@@ -61,4 +66,10 @@ end
 
 function timer_name(input::PipelineInput; kwargs...)
     return basename(input; kwargs...) * "_timer.txt"
+end
+
+
+function sans_extension(x::String)
+    l = findlast(isequal('.'), x)
+    return x[1:(l - 1)]
 end

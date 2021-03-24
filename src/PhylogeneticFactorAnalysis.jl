@@ -3,12 +3,16 @@ module PhylogeneticFactorAnalysis
 using BEASTXMLConstructor, BeastUtils.DataStorage, BeastUtils.MatrixUtils, BeastUtils.RunBeast, BeastUtils.Logs,
       UnPack, Random, DataFrames, CSV, Statistics
 
+
+ModelStat = NamedTuple{(:model, :statistics),Tuple{Int64,Array{String,1}}}
+
 struct ModelSelectionProvider
     n_factors::Vector{Int}
     shrinkage_mults::Vector{Float64} # only relevant if using shrinkage prior
     reps::Int
     statistics::Vector{String}
     burnin::Float64
+    final_names::Dict{String, ModelStat}
 
     function ModelSelectionProvider(n_factors::Vector{Int},
                                     shrinkage_mults::Vector{Float64},
@@ -20,7 +24,7 @@ struct ModelSelectionProvider
                   " be 0 or the length of the factors ($(length(n_factors)))"))
         end
 
-        return new(n_factors, shrinkage_mults, reps, statistics, burnin)
+        return new(n_factors, shrinkage_mults, reps, statistics, burnin, Dict{String, ModelStat}())
     end
 
 end
@@ -181,7 +185,7 @@ function run_pipeline(input::PipelineInput)
         make_final_xml(input)
     end
     if tasks.run_final_xml
-        #TODO
+        run_final_xml(input)
     end
     if tasks.process_final_log
         #TODO
@@ -279,25 +283,51 @@ function process_selection_statistics(input::PipelineInput, model::Int, rep::Int
     end
 end
 
+
+
 function make_final_xml(input::PipelineInput)
+    @unpack model_selection = input
+    @unpack statistics, final_names = model_selection
     best_models = find_best_models(input)
-    stats = input.model_selection.statistics
+
     n = length(best_models)
 
     if n == 1 # just 1 selection statistic
-        make_final_xml(input, best_models[1])
+        xml = make_final_xml(input, best_models[1])
+        final_names[sans_extension(xml)] =
+                (model = best_models[1], statistics = statistics)
     else
-        for i = 1:n
-            model = best_models[i]
-            if model in best_models[1:(i - 1)] # we already have the xml for that model
-                error("not yet implemented")
-                # TODO
-            else
-                make_final_xml(input, model, statistic = stats[i])
-            end
+        condensed = condense_models(best_models, statistics)
+        for model in keys(condensed)
+            model_stats = condensed[model]
+            xml = make_final_xml(input, model, statistic = join(model_stats, "and"))
+            final_names[sans_extension(xml)] = (model = model, statistics = model_stats)
         end
     end
 end
+
+
+function run_final_xml(input::PipelineInput)
+    xml_paths = final_xml_paths(input)
+    for path in xml_paths
+        RunBeast.run_beast(path, seed = input.beast_seed, overwrite = input.overwrite)
+    end
+end
+
+function condense_models(models::Vector{Int}, statistics::Vector{String})
+    @assert length(models) == length(statistics)
+    u = unique(models)
+
+    d = Dict{Int, Vector{String}}()
+
+    for model in u
+        inds = findall(isequal(model), models)
+        d[model] = statistics[inds]
+    end
+
+    return d
+end
+
 
 function find_best_models(input::PipelineInput)
     @unpack model_selection = input
