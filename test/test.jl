@@ -82,9 +82,12 @@ shrink_input = PhylogeneticFactorAnalysis.PipelineInput(
 try
     # PhylogeneticFactorAnalysis.run_pipeline(iid_input)
     # PhylogeneticFactorAnalysis.run_pipeline(shrink_input)
-    iid_input.tasks.make_selection_xml = false
-    iid_input.tasks.run_selection_xml = false
-    iid_input.tasks.run_final_xml = false
+    # iid_input.tasks.make_selection_xml = false
+    # iid_input.tasks.run_selection_xml = false
+    # iid_input.tasks.run_final_xml = false
+    # iid_input.tasks.record_selection_stats = false
+    # iid_input.tasks.process_final_log = false
+    # iid_input.tasks.plot_loadings = false
     PhylogeneticFactorAnalysis.run_pipeline(iid_input)
 catch e
     @error "Something went wrong" exception=(e, catch_backtrace())
