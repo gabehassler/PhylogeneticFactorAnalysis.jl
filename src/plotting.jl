@@ -1,4 +1,10 @@
-function prep_for_plotting(input::PipelineInput, log_path::String,
+const R_PLOT_SCRIPT = joinpath(@__DIR__, "plots.R")
+const LOAD_HEADER = "L"
+const SV_HEADER = "sv"
+const FAC_HEADER = "factors."
+
+
+function prep_loadings(input::PipelineInput, log_path::String,
                             csv_path::String)
 
     @unpack plot_attrs, trait_data = input
@@ -8,9 +14,9 @@ function prep_for_plotting(input::PipelineInput, log_path::String,
     original_labels = trait_data.trait_names
 
     cols, data = get_log(log_path, burnin=burnin)
-    L_header = "L"
-    sv_header = "sv"
-    fac_header = "factors."
+    L_header =  LOAD_HEADER
+    sv_header = SV_HEADER
+    fac_header = FAC_HEADER
 
     L_inds = findall(x -> startswith(x, L_header), cols)
     sv_inds = findall(x -> startswith(x, sv_header), cols)
@@ -78,10 +84,11 @@ function prep_for_plotting(input::PipelineInput, log_path::String,
     return k_effective
 end
 
-function load_plot(statistics_path::String; labels_path::String = "")
+function load_plot(plot_name::String, statistics_path::String; labels_path::String = "")
     @rput statistics_path
+    @rput plot_name
 
-    plots_path = joinpath(@__DIR__, "plots.R") # TODO: move elsewhere
+    plots_path = R_PLOT_SCRIPT
 
     if isempty(labels_path)
         labels_path = missing
@@ -92,6 +99,53 @@ function load_plot(statistics_path::String; labels_path::String = "")
     @rput labels_array
     R"""
     source(plots_path)
-    plot_loadings(statistics_path, "test.pdf", labels_path = labels_array[[1]])
+    plot_loadings(statistics_path, plot_name, labels_path = labels_array[[1]])
+    """
+end
+
+function prep_factors(svd_path::String, out_path::String)
+    cols, data = get_log(svd_path)
+    k = length(findall(x -> startswith(x, SV_HEADER), cols))
+    fac_inds = findall(x -> startswith(x, FAC_HEADER), cols)
+    fac_cols = cols[fac_inds]
+    fac_means = vec(mean(data[:, fac_inds], dims = 1))
+    nk = length(fac_cols)
+    n, r = divrem(nk, k)
+    @assert r == 0
+
+    F = zeros(n, k)
+    taxa = Vector{String}(undef, n)
+
+    ind = 1
+    for i = 1:n
+        taxon = split(fac_cols[ind], '.')[2]
+        taxa[i] = taxon
+        for j = 1:k
+            s = split(fac_cols[ind], '.')
+            @assert s[2] == taxon
+            @assert s[3] == "$j"
+            F[i, j] = fac_means[ind]
+            ind += 1
+        end
+    end
+
+    df = DataFrame(taxon = taxa)
+
+    for i = 1:k
+        df[!, Symbol("f$i")] = @view F[:, i]
+    end
+
+    CSV.write(out_path, df)
+    return taxa, F
+end
+
+function factor_plot(plot_path::String, stats_path::String, tree_path::String)
+    @rput plot_path
+    @rput stats_path
+    @rput tree_path
+    @rput R_PLOT_SCRIPT
+    R"""
+    source(R_PLOT_SCRIPT)
+    plot_factor_tree(plot_path, tree_path, stats_path)
     """
 end

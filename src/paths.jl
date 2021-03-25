@@ -52,8 +52,20 @@ function processed_log_paths(input::PipelineInput)
     final_paths_helper(input, "_processed.log")
 end
 
-function statistic_paths(input::PipelineInput)
-    final_paths_helper(input, "_statistics.csv")
+function loadings_statistic_paths(input::PipelineInput)
+    final_paths_helper(input, "_loadingsStatistics.csv")
+end
+
+function loadings_plot_paths(input::PipelineInput)
+    final_paths_helper(input, "_loadings.pdf")
+end
+
+function factors_statistic_paths(input::PipelineInput)
+    final_paths_helper(input, "_factorMeans.csv")
+end
+
+function factors_plot_paths(input::PipelineInput)
+    final_paths_helper(input, "_factors.pdf")
 end
 
 

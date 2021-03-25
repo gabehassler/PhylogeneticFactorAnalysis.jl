@@ -216,16 +216,18 @@ function run_pipeline(input::PipelineInput)
         plot_loadings(input)
     end
     if tasks.plot_factors
-        #TODO
+        plot_factors(input)
     end
 end
 
-function plot_loadings(input::PipelineInput)
+function plot_factors(input::PipelineInput)
     log_paths = processed_log_paths(input)
-    stat_paths = statistic_paths(input)
+    stat_paths = factors_statistic_paths(input)
+    plot_paths = factors_plot_paths(input)
+
     for i = 1:length(log_paths)
-        prep_for_plotting(input, log_paths[i], stat_paths[i])
-        load_plot(stat_paths[i], labels_path = input.labels_path)
+        prep_factors(log_paths[i], stat_paths[i])
+        factor_plot(plot_paths[i], stat_paths[i], input.tree_path)
     end
 end
 
@@ -351,6 +353,16 @@ function process_final_logs(input::PipelineInput)
 
     for i = 1:length(log_paths)
         svd_logs(log_paths[i], processed_paths[i], rotate_factors = true)
+    end
+end
+
+function plot_loadings(input::PipelineInput)
+    log_paths = processed_log_paths(input)
+    stat_paths = loadings_statistic_paths(input)
+    plot_paths = loadings_plot_paths(input)
+    for i = 1:length(log_paths)
+        prep_loadings(input, log_paths[i], stat_paths[i])
+        load_plot(plot_paths[i], stat_paths[i], labels_path = input.labels_path)
     end
 end
 
