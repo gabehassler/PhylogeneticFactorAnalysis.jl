@@ -3,6 +3,7 @@ const LPD_COND = "CLPD"
 # const LPD_MARG = "MLPD"
 const NO_STAT = ""
 const JOINT = "joint"
+const STATS = [MSE_STAT, LPD_COND]
 # const REMOVED = "removed"
 # const partition_dict = Dict(LPD_COND => false, MSE_STAT => false)
 const trait_dict = Dict(LPD_COND => JOINT, MSE_STAT => JOINT)

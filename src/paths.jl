@@ -68,7 +68,7 @@ function factors_plot_paths(input::PipelineInput)
     final_paths_helper(input, "_factors.pdf")
 end
 
-
+import Base.basename
 function basename(input::PipelineInput; model::Int = 0, rep::Int = 0, stat="")
     name = input.name
 

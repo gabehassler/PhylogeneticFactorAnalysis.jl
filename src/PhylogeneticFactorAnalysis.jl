@@ -1,8 +1,12 @@
 module PhylogeneticFactorAnalysis
 
-using BEASTXMLConstructor, BeastUtils.DataStorage, BeastUtils.MatrixUtils, BeastUtils.RunBeast, BeastUtils.Logs, PosteriorSummary,
-      UnPack, Random, DataFrames, CSV, Statistics, RCall
+export load_jld
 
+using BEASTXMLConstructor, BeastUtils, BeastUtils.DataStorage, BeastUtils.MatrixUtils, BeastUtils.RunBeast, BeastUtils.Logs, PosteriorSummary,
+      UnPack, Random, DataFrames, CSV, Statistics, RCall, EzXML, JLD
+
+import BeastUtils.DataStorage.TraitData
+import BEASTXMLConstructor.MCMCOptions
 
 include("PostProcessing.jl")
 using PhylogeneticFactorAnalysis.PostProcessing
@@ -54,7 +58,6 @@ struct IIDPrior <: PriorParameters
 end
 
 struct ShrinkagePrior <: PriorParameters
-    multiplier::Float64 #TODO: remove?
     shrink_by::String
     fix_first::Bool
     shrink_first::Bool
@@ -93,16 +96,18 @@ mutable struct PipelineTasks
 end
 
 struct PlotAttributes
+    labels_path::String
     burnin::Float64
     hpd_alpha::Float64
     scale_loadings_by_factors::Bool
 
     function PlotAttributes(;
+                            labels_path::String = "",
                             burnin::Float64 = 0.1,
                             hpd_alpha::Float64 = 0.05,
                             scale_loadings_by_factors::Bool = true
                             )
-        return new(burnin, hpd_alpha, scale_loadings_by_factors)
+        return new(labels_path, burnin, hpd_alpha, scale_loadings_by_factors)
     end
 end
 
@@ -112,7 +117,6 @@ struct PipelineInput
     directory::String
     data_path::String
     tree_path::String
-    labels_path::String #TODO: move to plot_attrs
     trait_data::TraitData
     newick::String
 
@@ -139,18 +143,18 @@ struct PipelineInput
                            labels_path::String = "",
                            tasks::PipelineTasks = PipelineTasks(),
                            selection_mcmc::MCMCOptions = MCMCOptions(),
-                           final_mcmc::MCMCOptions = MCMCOptions(),
+                           final_mcmc::MCMCOptions = MCMCOptions(chain_length = 100_000),
                            standardize_data::Bool = true,
                            julia_seed::Int = Int(rand(UInt32)),
                            beast_seed::Int = -1,
                            directory = pwd(),
                            overwrite::Bool = false,
-                           plot_attrs::PlotAttributes = PlotAttributes()
+                           plot_attrs::PlotAttributes = PlotAttributes(labels_path = labels_path)
                            )
         td = csv_to_traitdata(data_path)
         newick = read(tree_path, String)
         return new(name, directory,
-                   data_path, tree_path, labels_path, td, newick,
+                   data_path, tree_path, td, newick,
                    model_selection,
                    prior,
                    tasks,
@@ -167,6 +171,8 @@ end
 include("paths.jl")
 include("make_xml.jl")
 include("plotting.jl")
+include("ui.jl")
+include("parsers.jl")
 
 function run_pipeline(input::PipelineInput)
 
@@ -362,7 +368,7 @@ function plot_loadings(input::PipelineInput)
     plot_paths = loadings_plot_paths(input)
     for i = 1:length(log_paths)
         prep_loadings(input, log_paths[i], stat_paths[i])
-        load_plot(plot_paths[i], stat_paths[i], labels_path = input.labels_path)
+        load_plot(plot_paths[i], stat_paths[i], labels_path = input.plot_attrs.labels_path)
     end
 end
 
