@@ -16,6 +16,11 @@ function parse_pfa(node::EzXML.Node)
     default_name = sans_extension(basename(data_path))
     nm = attr(node, NAME, String, default = default_name)
 
+    standardize = attr(node, STANDARDIZE, Bool, default=false)
+    overwrite = attr(node, OVERWRITE, Bool, default=false)
+
+
+
 
     #TODO: other attributes
 
@@ -45,7 +50,9 @@ function parse_pfa(node::EzXML.Node)
                          tasks = tasks,
                          julia_seed = julia_seed,
                          directory = directory,
-                         plot_attrs = plots)
+                         plot_attrs = plots,
+                         standardize_data = standardize,
+                         overwrite = overwrite)
     # plots = parse_plots(child_nodes)
 
 end
@@ -72,7 +79,9 @@ const DIRECTORY = "directory"
 const DATA_PATH = "data"
 const TREE_PATH = "tree"
 const JULIA_SEED = "juliaSeed"
-const BEAST_SEED = "beastSeed"
+const BEAST_SEED = "mcmcSeed"
+const STANDARDIZE = "standardizeData"
+const OVERWRITE = "overwrite"
 
 const TASKS = "tasks"
 const PLOTS = "plotting"

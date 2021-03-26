@@ -30,12 +30,12 @@ plot_loadings <- function(csv_path, plot_name, labels_path = NA, height_scale=1.
   df$trait <- factor(df$trait, levels=trait_levs)
   df$cat <- factor(df$cat, levels=cat_levs)
   df$L <- sapply(df$L, as.numeric)
-  # df$sign_perc <- df$perc
-  # for (i in 1:length(df$perc)) {
-  #   if (df$L[i] < 0.0) {
-  #     df$sign_perc[i] <- -df$sign_perc[i]
-  #   }
-  # }
+  df$sign_perc <- df$perc
+  for (i in 1:length(df$perc)) {
+    if (df$L[i] < 0.0) {
+      df$sign_perc[i] <- 1.0 - df$sign_perc[i]
+    }
+  }
   
   df$sign <- sapply(df$L, sign)
   n <- dim(df)[[1]]
@@ -72,9 +72,9 @@ plot_loadings <- function(csv_path, plot_name, labels_path = NA, height_scale=1.
   
   p <- ggplot(df) +
     geom_vline(xintercept=0, linetype="dashed") +
-    geom_point(aes(y=trait, x=L, color=sign), size=1.5) +
-    geom_errorbarh(aes(y=trait, xmin=hpdl, xmax=hpdu, color=sign), height=0.0, size=1) +
-    scale_color_manual(values=pal) + 
+    geom_point(aes(y=trait, x=L, color=sign_perc), size=1.5) +
+    geom_errorbarh(aes(y=trait, xmin=hpdl, xmax=hpdu, color=sign_perc), height=0.0, size=1) +
+    scale_color_gradient2(midpoint = 0.5, low="blue", mid='grey', high="red", limits=c(0, 1), name="percent > 0") +
     scale_y_discrete(limits=rev) +
     # scale_color_gradient2(low="orange", mid="white", high="purple", limits=c(-1, 1), name="L") +
     #facet_grid(~ cat, scales="free_x", space="free_x") +
@@ -87,8 +87,8 @@ plot_loadings <- function(csv_path, plot_name, labels_path = NA, height_scale=1.
     theme(#axis.text.x = element_text(angle=0, hjust=1),
       panel.border = element_rect(colour = "black", fill=NA),
       panel.grid.major.x = element_blank(),
-      panel.grid.minor.x = element_blank(),
-      legend.position = "none"
+      panel.grid.minor.x = element_blank()
+      # legend.position = "none"
     ) +
     xlim(-absmax, absmax) +
     facet_grid(rows=vars(cat),
@@ -110,7 +110,7 @@ plot_loadings <- function(csv_path, plot_name, labels_path = NA, height_scale=1.
 
 
 
-### Factor plot
+## Factor plot
 
 
 library(ggtree)

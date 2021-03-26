@@ -51,8 +51,14 @@ end
 
 # PipelineInput
 function xml_attributes(input::PipelineInput)
-    #TODO
-    return []
+    return [NAME => input.name,
+            DATA_PATH => input.data_path,
+            TREE_PATH => input.tree_path,
+            DIRECTORY => input.directory,
+            STANDARDIZE => string(input.standardize_data),
+            JULIA_SEED => string(input.julia_seed),
+            BEAST_SEED => string(input.beast_seed),
+            OVERWRITE => string(input.overwrite)]
 end
 
 function xml_components(input::PipelineInput)
