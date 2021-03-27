@@ -17,15 +17,16 @@ function parse_pfa(node::EzXML.Node)
     standardize = attr(node, STANDARDIZE, Bool, default=false)
     overwrite = attr(node, OVERWRITE, Bool, default=false)
 
-
-
-    model_selection = parse_child(node, MODEL_SELECTION, parse_model_selection)
     prior_node = find_prior(node)
     if prior_node.name == IID_PRIOR
-        prior = parse_iid_prior(find_prior(node))
-    elseif prior_node.text == SHRINKAGE_PRIOR
-        error("not yet implemented")
+        prior = parse_iid_prior(prior_node)
+    elseif prior_node.name == SHRINKAGE_PRIOR
+        prior = parse_shrinkage_prior(prior_node)
     end
+
+    model_selection = parse_child(node, MODEL_SELECTION, parse_model_selection)
+
+    check_compatible(model_selection, prior)
 
     tasks = parse_child(node, TASKS, parse_tasks, default = PipelineTasks())
     plots = parse_child(node, PLOTS, parse_plots, default = PlotAttributes())
@@ -41,6 +42,22 @@ function parse_pfa(node::EzXML.Node)
                          final_mcmc = final_mcmc)
     # plots = parse_plots(child_nodes)
 
+end
+
+function check_compatible(model_selection::ModelSelectionProvider,
+                          ::IIDPrior)
+    if length(model_selection.shrinkage_mults) > 0
+        @warn "Shrinkage is not compatible with i.i.d. prior on the loadings. "*
+              "Ignoring '$SHRINKAGE' element in '$MODEL_SELECTION'."
+    end
+end
+
+function check_compatible(model_selection::ModelSelectionProvider,
+                          shrinkage::ShrinkagePrior)
+    if length(model_selection.shrinkage_mults) == 0
+        error("Must supply '$SHRINKAGE' element in '$MODEL_SELECTION' when " *
+              "using shrinkage prior.")
+    end
 end
 
 function parse_child(node::EzXML.Node, child_name::String, parser::Function; default = nothing)
@@ -83,6 +100,8 @@ const STANDARDIZE = "standardizeData"
 const OVERWRITE = "overwrite"
 const CHAIN_LENGTH = "chainLength"
 const MCMC = "mcmcOptions"
+const FORCE_ORDERED = "forceDescendingScales"
+const SPACING = "scaleSpacing"
 
 const TASKS = "tasks"
 const PLOTS = "plotting"
@@ -172,12 +191,13 @@ function parse_model_selection(node::EzXML.Node)
         shrinkage = parse_text_array_child(shrinkage, Float64)
     end
 
-    mcmc = get_child_by_name(node, MCMC, optional = true)
-    if isnothing(shrinkage)
-        mcmc = MCMCOptions()
-    else
-        mcmc = parse_mcmc(mcmc)
+    if length(factors) != length(shrinkage) && length(shrinkage) > 0
+        if length(factors) == 1
+            factors = fill(factors[1], length(shrinkage))
+        end
     end
+
+    mcmc = parse_child(node, MCMC, parse_mcmc, default = MCMCOptions(chain_length = 10_000))
 
     return ModelSelectionProvider(factors, shrinkage, reps,
                                   statistics = stats, burnin = burnin,
@@ -207,6 +227,15 @@ function parse_iid_prior(iid::EzXML.Node)
             join(CONSTRAINTS, ", "))
     end
     return IIDPrior(constraint)
+end
+
+function parse_shrinkage_prior(node::EzXML.Node)
+    force_ordered = attr(node, FORCE_ORDERED, Bool, default = false)
+    spacing = attr(node, SPACING, Float64, default = 1.0)
+    if !(0.0 < spacing <= 1.0)
+        error("Attribute '$SPACING' in element '$(node.name)' must be in (0, 1]")
+    end
+    return ShrinkagePrior(force_ordered = force_ordered, spacing = spacing)
 end
 
 function parse_tasks(node::EzXML.Node)

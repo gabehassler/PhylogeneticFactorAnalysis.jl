@@ -65,6 +65,17 @@ struct ShrinkagePrior <: PriorParameters
     fix_first::Bool
     shrink_first::Bool
     force_ordered::Bool
+    spacing::Float64
+
+    function ShrinkagePrior(;
+                            shrink_by::String = SHAPE,
+                            fix_first::Bool = true,
+                            shrink_first::Bool = false,
+                            force_ordered::Bool = true,
+                            spacing::Float64 = 0.9)
+        return new(shrink_by, fix_first, shrink_first, force_ordered, spacing)
+    end
+    #TODO: add spacing
 end
 
 mutable struct PipelineTasks
