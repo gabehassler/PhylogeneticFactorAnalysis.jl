@@ -7,13 +7,11 @@ function parse_pfa(node::EzXML.Node)
     @assert node.name == PFA
     julia_seed = attr(node, JULIA_SEED, Int, default=rand(UInt32))
     directory = attr(node, DIRECTORY, String, default= pwd())
-    data_path = attr(node, DATA_PATH, String)
-    tree_path = attr(node, TREE_PATH, String)
 
-    data_path = check_path(data_path, directory)
-    tree_path = check_path(data_path, directory)
+    data = parse_data(get_child_by_name(node, DATA),
+                      alternative_directory = directory)
 
-    default_name = sans_extension(basename(data_path))
+    default_name = sans_extension(basename(data.data_path))
     nm = attr(node, NAME, String, default = default_name)
 
     standardize = attr(node, STANDARDIZE, Bool, default=false)
@@ -21,10 +19,7 @@ function parse_pfa(node::EzXML.Node)
 
 
 
-
-    #TODO: other attributes
-
-    model_selection = parse_model_selection(get_child_by_name(node, MODEL_SELECTION))
+    model_selection = parse_child(node, MODEL_SELECTION, parse_model_selection)
     prior_node = find_prior(node)
     if prior_node.name == IID_PRIOR
         prior = parse_iid_prior(find_prior(node))
@@ -32,30 +27,33 @@ function parse_pfa(node::EzXML.Node)
         error("not yet implemented")
     end
 
-    task_node = get_child_by_name(node, TASKS, optional = true)
-    if isnothing(task_node)
-        tasks = PipelineTasks()
-    else
-        tasks = parse_tasks(task_node)
-    end
+    tasks = parse_child(node, TASKS, parse_tasks, default = PipelineTasks())
+    plots = parse_child(node, PLOTS, parse_plots, default = PlotAttributes())
+    final_mcmc = parse_child(node, MCMC, parse_mcmc, default = MCMCOptions(chain_length = 100_000))
 
-    plot_node = get_child_by_name(node, PLOTS, optional = true)
-    if isnothing(plot_node)
-        plots = PlotAttributes()
-    else
-        plots = parse_plots(plot_node)
-    end
-
-    return PipelineInput(nm, data_path, tree_path, model_selection, prior,
+    return PipelineInput(nm, data, model_selection, prior,
                          tasks = tasks,
                          julia_seed = julia_seed,
                          directory = directory,
                          plot_attrs = plots,
                          standardize_data = standardize,
-                         overwrite = overwrite)
+                         overwrite = overwrite,
+                         final_mcmc = final_mcmc)
     # plots = parse_plots(child_nodes)
 
 end
+
+function parse_child(node::EzXML.Node, child_name::String, parser::Function; default = nothing)
+    optional = !isnothing(default)
+    child_node = get_child_by_name(node, child_name, optional = optional)
+    if isnothing(child_node) && optional
+        return default
+    end
+
+    return parser(child_node)
+end
+
+
 
 function check_path(path::String, dir::String)
     if isfile(path)
@@ -76,12 +74,15 @@ const PFA = "phylogeneticFactorAnalysis"
 
 const NAME = "name"
 const DIRECTORY = "directory"
-const DATA_PATH = "data"
+const DATA = "data"
+const DATA_PATH = "traits"
 const TREE_PATH = "tree"
-const JULIA_SEED = "juliaSeed"
+const JULIA_SEED = "partitionSeed"
 const BEAST_SEED = "mcmcSeed"
 const STANDARDIZE = "standardizeData"
 const OVERWRITE = "overwrite"
+const CHAIN_LENGTH = "chainLength"
+const MCMC = "mcmcOptions"
 
 const TASKS = "tasks"
 const PLOTS = "plotting"
@@ -94,7 +95,7 @@ const KEYS = Dict{String, Vector{Pair{String, Symbol}}}(
 )
 
 import Base.parse
-function parse(type::Type{T}, s::AbstractString) where T <: AbstractString
+function parse(::Type{T}, s::AbstractString) where T <: AbstractString
     return convert(T, s)
 end
 
@@ -138,6 +139,16 @@ function parse_text_array_child(node::EzXML.Node, type::Type)
     return parse_text_array(children[1], type)
 end
 
+function parse_data(node::EzXML.Node; alternative_directory::String)
+    data_path = attr(node, DATA_PATH, String)
+    tree_path = attr(node, TREE_PATH, String)
+
+    data_path = check_path(data_path, alternative_directory)
+    tree_path = check_path(tree_path, alternative_directory)
+    return TraitsAndTree(data_path, tree_path)
+end
+
+
 function parse_model_selection(node::EzXML.Node)
     reps = attr(node, REPEATS, Int, default=10)
     stats = attr(node, SELECTION_STAT, String, default = "CLPD")
@@ -161,8 +172,16 @@ function parse_model_selection(node::EzXML.Node)
         shrinkage = parse_text_array_child(shrinkage, Float64)
     end
 
+    mcmc = get_child_by_name(node, MCMC, optional = true)
+    if isnothing(shrinkage)
+        mcmc = MCMCOptions()
+    else
+        mcmc = parse_mcmc(mcmc)
+    end
+
     return ModelSelectionProvider(factors, shrinkage, reps,
-                                  statistics = stats, burnin = burnin)
+                                  statistics = stats, burnin = burnin,
+                                  mcmc_options = mcmc)
 end
 
 const CONSTRAINTS = ["orthogonal", "upperTriangular", "hybrid"]
@@ -191,5 +210,14 @@ function parse_iid_prior(iid::EzXML.Node)
 end
 
 function parse_tasks(node::EzXML.Node)
+    error("not implemented")
+end
+
+function parse_mcmc(node::EzXML.Node)
+    chain_length = attr(node, CHAIN_LENGTH, Int, default = 10_000)
+    return MCMCOptions(chain_length = chain_length)
+end
+
+function parse_plots(node::EzXML.Node)
     error("not implemented")
 end

@@ -20,11 +20,13 @@ struct ModelSelectionProvider
     reps::Int
     statistics::Vector{String}
     burnin::Float64
+    mcmc_options::MCMCOptions
     final_names::Dict{String, ModelStat}
 
     function ModelSelectionProvider(n_factors::Vector{Int},
                                     shrinkage_mults::Vector{Float64},
                                     reps::Int;
+                                    mcmc_options::MCMCOptions = MCMCOptions(),
                                     statistics::Vector{String} = [LPD_COND],
                                     burnin::Float64 = 0.25)
         if length(n_factors) != length(shrinkage_mults) && !isempty(shrinkage_mults)
@@ -32,7 +34,8 @@ struct ModelSelectionProvider
                   " be 0 or the length of the factors ($(length(n_factors)))"))
         end
 
-        return new(n_factors, shrinkage_mults, reps, statistics, burnin, Dict{String, ModelStat}())
+        return new(n_factors, shrinkage_mults, reps, statistics, burnin,
+                   mcmc_options, Dict{String, ModelStat}())
     end
 
 end
@@ -111,21 +114,31 @@ struct PlotAttributes
     end
 end
 
-
-struct PipelineInput
-    name::String
-    directory::String
+struct TraitsAndTree
     data_path::String
     tree_path::String
     trait_data::TraitData
     newick::String
 
+    function TraitsAndTree(data_path::String, tree_path::String)
+        traits = parse_traitdata(data_path)
+        newick = read(tree_path, String)
+
+        return new(data_path, tree_path, traits, newick)
+    end
+end
+
+
+struct PipelineInput
+    name::String
+    directory::String
+
+    data::TraitsAndTree
 
     model_selection::ModelSelectionProvider
     prior::PriorParameters
     tasks::PipelineTasks
 
-    selection_mcmc::MCMCOptions
     final_mcmc::MCMCOptions
     standardize_data::Bool
     julia_seed::Int
@@ -136,13 +149,11 @@ struct PipelineInput
 
 
     function PipelineInput(name::String,
-                           data_path::String,
-                           tree_path::String,
+                           data::TraitsAndTree,
                            model_selection::ModelSelectionProvider,
                            prior::PriorParameters;
                            labels_path::String = "",
                            tasks::PipelineTasks = PipelineTasks(),
-                           selection_mcmc::MCMCOptions = MCMCOptions(),
                            final_mcmc::MCMCOptions = MCMCOptions(chain_length = 100_000),
                            standardize_data::Bool = true,
                            julia_seed::Int = Int(rand(UInt32)),
@@ -151,14 +162,11 @@ struct PipelineInput
                            overwrite::Bool = false,
                            plot_attrs::PlotAttributes = PlotAttributes(labels_path = labels_path)
                            )
-        td = csv_to_traitdata(data_path)
-        newick = read(tree_path, String)
         return new(name, directory,
-                   data_path, tree_path, td, newick,
+                   data,
                    model_selection,
                    prior,
                    tasks,
-                   selection_mcmc,
                    final_mcmc,
                    standardize_data,
                    julia_seed,
