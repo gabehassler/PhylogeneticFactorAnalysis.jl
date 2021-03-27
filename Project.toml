@@ -4,7 +4,15 @@ authors = ["Gabe Hassler <gabriel.w.hassler@gmail.com> and contributors"]
 version = "0.1.0"
 
 [deps]
+BEASTXMLConstructor = "2ff12cca-58d7-407c-9ba2-24d4f684d922"
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+EzXML = "8f5d6c58-4d21-5cfd-889c-e3ad7ee6a615"
+JLD = "4138dd39-2aa7-5051-a626-17a0bb65d9c8"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+RCall = "6f49c342-dc21-5d91-9882-a32aef131414"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [compat]
 julia = "1"
