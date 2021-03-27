@@ -14,6 +14,8 @@ const SHAPE = "shape"
 const SCALE = "scale"
 const BOTH = "both"
 
+const CONSTRAINT_DICT = Dict{String, String}("orthogonal" => "none")
+
 const LOADINGS_WEIGHT = 3.0
 
 function set_common_options(bx::BEASTXMLElement, options::MCMCOptions; standardize::Bool = true)
@@ -29,7 +31,8 @@ end
 
 function make_final_xml(input::PipelineInput, model::Int; statistic::String = "")
 
-    @unpack trait_data, newick, model_selection, prior, final_mcmc = input
+    @unpack data, model_selection, prior, final_mcmc = input
+    @unpack trait_data, newick = data
     @unpack data, taxa = trait_data
 
     bx = make_initial_xml(data, taxa, newick, model_selection, prior, model, log_factors = true)
@@ -45,10 +48,12 @@ function make_training_xml(input::PipelineInput, training_data::Matrix{Float64},
                            validation_data::Matrix{Float64},
                            model::Int, rep::Int; standardize::Bool = true)
 
-    @unpack name, trait_data, newick, model_selection, prior, selection_mcmc = input
+    @unpack name, data, model_selection, prior = input
+    @unpack trait_data, newick = data
+    @unpack mcmc_options = model_selection
     bx = make_initial_xml(training_data, trait_data.taxa, newick, model_selection, prior, model, log_factors = false)
 
-    set_common_options(bx, selection_mcmc, standardize = standardize)
+    set_common_options(bx, mcmc_options, standardize = standardize)
 
     add_validation(bx, validation_data, model_selection.statistics)
 
@@ -77,7 +82,7 @@ function add_validation(bx::BEASTXMLElement, validation_data::Matrix{Float64}, s
                 BEASTXMLConstructor.CrossValidationXMLElement(trait_validation)
 
             BEASTXMLConstructor.set_validation_type!(cross_validation,
-                                                BeastNames.SQUARED_ERROR)
+                                BEASTXMLConstructor.BeastNames.SQUARED_ERROR)
 
             BEASTXMLConstructor.set_log_sum!(cross_validation, true)
 
@@ -171,7 +176,7 @@ function make_initial_xml(data::Matrix{Float64},
                                         timing = true)
 
     lgo = BEASTXMLConstructor.get_loadings_op(bx)
-    lgo.sparsity = prior.constraint
+    lgo.sparsity = CONSTRAINT_DICT[prior.constraint]
 
     return bx
 end

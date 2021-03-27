@@ -7,7 +7,8 @@ const FAC_HEADER = "factors."
 function prep_loadings(input::PipelineInput, log_path::String,
                             csv_path::String)
 
-    @unpack plot_attrs, trait_data = input
+    @unpack plot_attrs, data = input
+    @unpack trait_data = data
     @unpack burnin, hpd_alpha, scale_loadings_by_factors = plot_attrs #TODO: just pass plot_attrs?
 
     cat_dict = Dict{String, String}()

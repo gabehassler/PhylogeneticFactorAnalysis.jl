@@ -241,12 +241,13 @@ function plot_factors(input::PipelineInput)
 
     for i = 1:length(log_paths)
         prep_factors(log_paths[i], stat_paths[i])
-        factor_plot(plot_paths[i], stat_paths[i], input.tree_path)
+        factor_plot(plot_paths[i], stat_paths[i], input.data.tree_path)
     end
 end
 
 function make_selection_xml(input::PipelineInput)
-    @unpack model_selection, trait_data, name, prior, selection_mcmc = input
+    @unpack model_selection, data, name, prior = input
+    @unpack trait_data, newick = data
     @unpack reps = model_selection
     @unpack data = trait_data
 
@@ -260,8 +261,6 @@ function make_selection_xml(input::PipelineInput)
     rng = 1:reps
 
     assignments = rand(rng, length(validation_data))
-
-    newick = read(input.tree_path, String)
 
     for r = 1:reps
         #TODO: initialize with "L" for shrinkage?
