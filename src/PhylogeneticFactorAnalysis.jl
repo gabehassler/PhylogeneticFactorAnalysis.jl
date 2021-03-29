@@ -192,6 +192,7 @@ include("make_xml.jl")
 include("plotting.jl")
 include("writer.jl")
 include("parsers.jl")
+include("ui.jl")
 
 function run_pipeline(input::PipelineInput)
 
@@ -210,6 +211,8 @@ function run_pipeline(input::PipelineInput)
     end
 
     cd(dir)
+
+    write_jld(input.name * "_backup.jld", input)
 
     if tasks.make_selection_xml
         make_selection_xml(input)

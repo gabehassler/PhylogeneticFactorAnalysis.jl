@@ -14,9 +14,13 @@ const SHAPE = "shape"
 const SCALE = "scale"
 const BOTH = "both"
 
-const CONSTRAINT_DICT = Dict{String, String}("orthogonal" => "none")
+const CONSTRAINT_DICT = Dict{String, String}("orthogonal" => "none",
+                                             "hybrid" => "hybrid",
+                                             "upperTriangular" => "upperTriangular")
 
 const LOADINGS_WEIGHT = 3.0
+
+
 
 function set_common_options(bx::BEASTXMLElement, options::MCMCOptions; standardize::Bool = true)
 
