@@ -3,7 +3,7 @@ module PostProcessing
 export svd_logs
 
 using LinearAlgebra, Statistics, LinearAlgebra.BLAS
-using BeastUtils.Logs, BeastUtils.MatrixUtils, PosteriorSummary
+using BeastUtils.Logs, BeastUtils.MatrixUtils, BeastUtils.PosteriorSummary
 
 
 const DEBUG = false

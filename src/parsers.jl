@@ -1,15 +1,20 @@
-function parse_xml(xml::EzXML.Document)
-    pfa = xml.root
-    parse_pfa(pfa)
+function parse_xml(xml_path::String)
+    dir = dirname(xml_path)
+    return parse_xml(readxml(xml_path), dir)
 end
 
-function parse_pfa(node::EzXML.Node)
+function parse_xml(xml::EzXML.Document, xml_directory::String)
+    pfa = xml.root
+    parse_pfa(pfa, xml_directory)
+end
+
+function parse_pfa(node::EzXML.Node, xml_directory::String)
     @assert node.name == PFA
     julia_seed = attr(node, JULIA_SEED, Int, default=rand(UInt32))
     directory = attr(node, DIRECTORY, String, default= pwd())
 
     data = parse_data(get_child_by_name(node, DATA),
-                      alternative_directory = directory)
+                      alternative_directories = [directory, xml_directory])
 
     default_name = sans_extension(basename(data.data_path))
     nm = attr(node, NAME, String, default = default_name)
@@ -72,12 +77,16 @@ end
 
 
 
-function check_path(path::String, dir::String)
+function check_path(path::String, dirs::Vector{String})
     if isfile(path)
         return abspath(path)
-    elseif isfile(joinpath(dir, path))
-        return abspath(joinpath(dir, path))
     else
+        for dir in dirs
+            if isfile(joinpath(dir, path))
+                return abspath(joinpath(dir, path))
+            end
+        end
+
         if dir == pwd()
             error("Cannot locate file $(abspath(path))")
         else
@@ -96,7 +105,7 @@ const DATA_PATH = "traits"
 const TREE_PATH = "tree"
 const JULIA_SEED = "partitionSeed"
 const BEAST_SEED = "mcmcSeed"
-const STANDARDIZE = "standardizeData"
+const STANDARDIZE = "standardizeTraits"
 const OVERWRITE = "overwrite"
 const CHAIN_LENGTH = "chainLength"
 const MCMC = "mcmcOptions"
@@ -158,12 +167,12 @@ function parse_text_array_child(node::EzXML.Node, type::Type)
     return parse_text_array(children[1], type)
 end
 
-function parse_data(node::EzXML.Node; alternative_directory::String)
+function parse_data(node::EzXML.Node; alternative_directories::Vector{String})
     data_path = attr(node, DATA_PATH, String)
     tree_path = attr(node, TREE_PATH, String)
 
-    data_path = check_path(data_path, alternative_directory)
-    tree_path = check_path(tree_path, alternative_directory)
+    data_path = check_path(data_path, alternative_directories)
+    tree_path = check_path(tree_path, alternative_directories)
     return TraitsAndTree(data_path, tree_path)
 end
 
