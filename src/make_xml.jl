@@ -14,9 +14,14 @@ const SHAPE = "shape"
 const SCALE = "scale"
 const BOTH = "both"
 
-const CONSTRAINT_DICT = Dict{String, String}("orthogonal" => "none",
-                                             "hybrid" => "hybrid",
-                                             "upperTriangular" => "upperTriangular")
+const ORTHOGONAL = "orthogonal"
+const HYBRID = "hybrid"
+const UPPER_TRIANGULAR = "upperTriangular"
+const NONE = "none"
+
+const CONSTRAINT_DICT = Dict{String, String}(ORTHOGONAL => NONE,
+                                             HYBRID => HYBRID,
+                                             UPPER_TRIANGULAR => UPPER_TRIANGULAR)
 
 const LOADINGS_WEIGHT = 3.0
 

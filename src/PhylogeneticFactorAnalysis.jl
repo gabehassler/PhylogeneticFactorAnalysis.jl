@@ -187,6 +187,12 @@ struct PipelineInput
     end
 end
 
+function dimensions(input::PipelineInput, model::Int)
+    n, p = size(input.data.trait_data.data)
+    k = input.model_selection.n_factors[model]
+    return (n = n, p = p, k = k)
+end
+
 include("paths.jl")
 include("make_xml.jl")
 include("plotting.jl")
@@ -377,10 +383,36 @@ end
 function process_final_logs(input::PipelineInput)
     log_paths = final_log_paths(input)
     processed_paths = processed_log_paths(input)
+    models = input.model_selection.final_names
 
     for i = 1:length(log_paths)
-        svd_logs(log_paths[i], processed_paths[i], rotate_factors = true)
+        best_model = models[sans_extension(log_paths[i])].model
+        @unpack k, p = dimensions(input, best_model)
+        @unpack rows, cols = rotation_rows_and_cols(input, best_model)
+
+        svd_logs(log_paths[i], processed_paths[i], k, p,
+                 rotate_factors = true,
+                 relevant_rows = rows,
+                 relevant_cols = cols)
     end
+end
+
+function rotation_rows_and_cols(input::PipelineInput, model::Int)
+    @unpack k, p = dimensions(input, model)
+    if typeof(input.prior) == IIDPrior
+        constraint = input.prior.constraint
+        if constraint == HYBRID
+            return (rows = collect(2:k), cols = collect(2:p))
+        elseif constraint == UPPER_TRIANGULAR
+            return (rows = Int[], cols = Int[])
+        elseif constraint == ORTHOGONAL
+            return (rows = collect(1:k), cols = collect(1:p))
+        else
+            error("unrecognized constraint '$constraint'")
+        end
+    end
+
+    return (rows = collect(1:k), cols = collect(1:p))
 end
 
 function plot_loadings(input::PipelineInput)
