@@ -104,11 +104,24 @@ function add_validation(bx::BEASTXMLElement, validation_data::Matrix{Float64}, s
 end
 
 
-function shrinkage_shapes_and_scales(k::Int, shrink::Float64, prior::ShrinkagePrior)
+function shrinkage_shapes_and_scales(k::Int, shrink::Float64,
+                                     prior::ShrinkagePrior,
+                                     data::Matrix{Float64})
+
     means = [shrink for i = 1:k]
 
+    if prior.scale_first && prior.shrink_first
+        error("This shouldn't happen. Please submit bug report.")
+    end
+
+
     if !prior.shrink_first
-        means[1] = 1.0
+        if prior.scale_first
+            σ2 = sum([missing_var(@view data[:, i]) for i = 1:size(data, 2)])
+            means[1] = 1.0 / σ2
+        else
+            means[1] = 1.0
+        end
     end
 
     scales = zeros(k)
@@ -152,7 +165,7 @@ function make_initial_xml(data::Matrix{Float64},
     set_scale = true # TODO: set based on whether we initialize with loadings
 
     shrink = selection_vars.shrinkage_mults[model]
-    @unpack shapes, scales = shrinkage_shapes_and_scales(k, shrink, prior)
+    @unpack shapes, scales = shrinkage_shapes_and_scales(k, shrink, prior, data)
 
 
     BEASTXMLConstructor.set_shrinkage_mults!(facs,

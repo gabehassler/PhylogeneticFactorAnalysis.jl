@@ -64,6 +64,7 @@ struct ShrinkagePrior <: PriorParameters
     shrink_by::String
     fix_first::Bool
     shrink_first::Bool
+    scale_first::Bool
     force_ordered::Bool
     spacing::Float64
 
@@ -71,9 +72,10 @@ struct ShrinkagePrior <: PriorParameters
                             shrink_by::String = SHAPE,
                             fix_first::Bool = true,
                             shrink_first::Bool = false,
+                            scale_first::Bool = true,
                             force_ordered::Bool = true,
                             spacing::Float64 = 0.9)
-        return new(shrink_by, fix_first, shrink_first, force_ordered, spacing)
+        return new(shrink_by, fix_first, shrink_first, scale_first, force_ordered, spacing)
     end
     #TODO: add spacing
 end
@@ -215,7 +217,7 @@ function run_pipeline(input::PipelineInput)
         mkpath(selection_xml_dir(input))
         mkpath(timer_dir(input))
     end
-
+    original_dir = pwd()
     cd(dir)
 
     write_jld(input.name * "_backup.jld", input)
@@ -252,6 +254,8 @@ function run_pipeline(input::PipelineInput)
     if tasks.plot_factors
         plot_factors(input)
     end
+
+    cd(original_dir)
 end
 
 function plot_factors(input::PipelineInput)
