@@ -37,6 +37,11 @@ function parse_pfa(node::EzXML.Node, xml_directory::String)
     plots = parse_child(node, PLOTS, parse_plots, default = PlotAttributes())
     final_mcmc = parse_child(node, MCMC, parse_mcmc, default = MCMCOptions(chain_length = 100_000))
 
+    initialize_parameters = false
+    if typeof(prior) == ShrinkagePrior
+        initialize_parameters = true
+    end
+
     return PipelineInput(nm, data, model_selection, prior,
                          tasks = tasks,
                          julia_seed = julia_seed,
@@ -44,7 +49,8 @@ function parse_pfa(node::EzXML.Node, xml_directory::String)
                          plot_attrs = plots,
                          standardize_data = standardize,
                          overwrite = overwrite,
-                         final_mcmc = final_mcmc)
+                         final_mcmc = final_mcmc,
+                         initialize_parameters = initialize_parameters)
     # plots = parse_plots(child_nodes)
 
 end

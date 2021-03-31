@@ -19,12 +19,15 @@ const HYBRID = "hybrid"
 const UPPER_TRIANGULAR = "upperTriangular"
 const NONE = "none"
 
+const INIT = "init"
+
 const CONSTRAINT_DICT = Dict{String, String}(ORTHOGONAL => NONE,
                                              HYBRID => HYBRID,
                                              UPPER_TRIANGULAR => UPPER_TRIANGULAR)
 
 const LOADINGS_WEIGHT = 3.0
 
+ModelParams = NamedTuple{(:L, :precs),Tuple{Matrix{Float64},Vector{Float64}}}
 
 
 function set_common_options(bx::BEASTXMLElement, options::MCMCOptions; standardize::Bool = true)
@@ -35,6 +38,11 @@ function set_common_options(bx::BEASTXMLElement, options::MCMCOptions; standardi
 
     facs = BEASTXMLConstructor.get_integratedFactorModel(bx)
     facs.standardize_traits = standardize
+end
+
+function set_parameters(bx::BEASTXMLElement, params::ModelParams)
+    set_loadings(bx, params.L)
+    set_factor_precisions(bx, params.precs)
 end
 
 
@@ -55,7 +63,8 @@ end
 
 function make_training_xml(input::PipelineInput, training_data::Matrix{Float64},
                            validation_data::Matrix{Float64},
-                           model::Int, rep::Int; standardize::Bool = true)
+                           model::Int, rep::Int, parameters::ModelParams;
+                           standardize::Bool = true)
 
     @unpack name, data, model_selection, prior = input
     @unpack trait_data, newick = data
@@ -63,10 +72,25 @@ function make_training_xml(input::PipelineInput, training_data::Matrix{Float64},
     bx = make_initial_xml(training_data, trait_data.taxa, newick, model_selection, prior, model, log_factors = false)
 
     set_common_options(bx, mcmc_options, standardize = standardize)
+    set_parameters(bx, parameters)
 
     add_validation(bx, validation_data, model_selection.statistics)
 
     filename = xml_name(input, model = model, rep = rep)
+    path = BEASTXMLConstructor.save_xml(filename, bx)
+    return filename
+end
+
+function make_init_xml(input::PipelineInput, data::Matrix{Float64}, model::Int; standardize::Bool = false)
+    @unpack model_selection = input
+    @unpack trait_data, newick = input.data
+    @unpack taxa = trait_data
+
+    bx = make_initial_xml(data, taxa, newick, model_selection, IIDPrior(ORTHOGONAL), model, log_factors = false)
+    mcmc_options = MCMCOptions(chain_length = 1_000)
+    set_common_options(bx, mcmc_options, standardize = standardize)
+
+    filename = xml_name(input, stat = INIT)
     path = BEASTXMLConstructor.save_xml(filename, bx)
     return filename
 end

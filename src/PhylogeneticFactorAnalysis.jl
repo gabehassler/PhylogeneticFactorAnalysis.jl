@@ -3,7 +3,7 @@ module PhylogeneticFactorAnalysis
 export load_jld, pfa
 
 using BEASTXMLConstructor, BeastUtils, BeastUtils.DataStorage, BeastUtils.MatrixUtils, BeastUtils.RunBeast, BeastUtils.Logs, BeastUtils.PosteriorSummary,
-      UnPack, Random, DataFrames, CSV, Statistics, RCall, EzXML, JLD
+      UnPack, Random, DataFrames, CSV, Statistics, RCall, EzXML, JLD, LinearAlgebra
 
 import BeastUtils.DataStorage.TraitData
 import BEASTXMLConstructor.MCMCOptions
@@ -159,6 +159,7 @@ struct PipelineInput
 
     overwrite::Bool
     plot_attrs::PlotAttributes
+    initialize_parameters::Bool
 
 
     function PipelineInput(name::String,
@@ -173,7 +174,8 @@ struct PipelineInput
                            beast_seed::Int = -1,
                            directory = pwd(),
                            overwrite::Bool = false,
-                           plot_attrs::PlotAttributes = PlotAttributes(labels_path = labels_path)
+                           plot_attrs::PlotAttributes = PlotAttributes(labels_path = labels_path),
+                           initialize_parameters::Bool = false
                            )
         return new(name, directory,
                    data,
@@ -185,7 +187,8 @@ struct PipelineInput
                    julia_seed,
                    beast_seed,
                    overwrite,
-                   plot_attrs)
+                   plot_attrs,
+                   initialize_parameters)
     end
 end
 
@@ -258,6 +261,68 @@ function run_pipeline(input::PipelineInput)
     cd(original_dir)
 end
 
+const L_HEADER = "L"
+const PREC_HEADER = "factorPrecision"
+
+function check_spacing!(::Vector{Float64}, ::IIDPrior)
+    # do nothing
+end
+
+function check_spacing!(x::Vector{Float64}, prior::ShrinkagePrior)
+    original_sum_squares = dot(x, x)
+
+    spacing = prior.spacing
+    for i = 2:length(x)
+        max_val = 0.8 * spacing * abs(x[i - 1])
+        if abs(x[i]) > max_val
+            x[i] = max_val
+        end
+    end
+    new_sum_squares = dot(x, x)
+
+    return x .* sqrt(original_sum_squares / new_sum_squares)
+end
+
+
+function default_parameters(k::Int, p::Int)
+    L = zeros(k, p)
+    for i = 1:k
+        L[i, i] = 1.0
+    end
+
+    return (L = L, precs = ones(p))
+end
+
+function initialize_parameters(input::PipelineInput,
+                               data::Matrix{Float64},
+                               model::Int)
+    filename = make_init_xml(input, data, model, standardize = false)
+    xml_path = init_xml_path(input)
+    mv(filename, xml_path, force = input.overwrite)
+
+    run_beast(xml_path, seed = input.beast_seed, overwrite = input.overwrite)
+    log_filename = log_name(input, stat=INIT)
+    log_path = init_log_path(input)
+    mv(log_filename, log_path, force = input.overwrite)
+
+    cols, data = get_log(log_path)
+    L_cols = findall(startswith(L_HEADER), cols)
+
+    @unpack k, p = dimensions(input, model)
+    L = reshape(data[end, L_cols], p, k)'
+    Lsvd = svd(L)
+
+    @unpack S, Vt = Lsvd
+    check_spacing!(S, input.prior)
+
+    L = Diagonal(S) * Vt
+
+    prec_cols = findall(startswith(PREC_HEADER), cols)
+    precs = data[end, prec_cols]
+
+    return (L = L, precs = precs)
+end
+
 function plot_factors(input::PipelineInput)
     log_paths = processed_log_paths(input)
     stat_paths = factors_statistic_paths(input)
@@ -287,11 +352,24 @@ function make_selection_xml(input::PipelineInput)
     assignments = rand(rng, length(validation_data))
 
     for r = 1:reps
-        #TODO: initialize with "L" for shrinkage?
+        L_inits = Dict{Int, ModelParams}()
+
         training_data .= validation_data
         training_data[findall(x -> x == r, assignments)] .= NaN
         for m = 1:length(model_selection)
-            xml = make_training_xml(input, training_data, validation_data, m, r, standardize = false)
+
+            @unpack k, p = dimensions(input, m)
+            if !haskey(L_inits, k)
+                if input.initialize_parameters
+                    params = initialize_parameters(input, training_data, m)
+                    L_inits[k] = params
+                else
+                    L_inits[k] = default_parameters(k, p)
+                end
+            end
+
+            xml = make_training_xml(input, training_data, validation_data, m, r,
+                                    L_inits[k], standardize = false)
             xml_path = selection_xml_path(input, model = m, rep = r)
             mv(xml, xml_path, force=input.overwrite)
         end

@@ -34,6 +34,13 @@ function timer_path(input::PipelineInput; kwargs...)
     return joinpath(timer_dir(input), timer_name(input; kwargs...))
 end
 
+function init_xml_path(input::PipelineInput)
+    return selection_xml_path(input, stat="init")
+end
+
+function init_log_path(input::PipelineInput)
+    return selection_log_path(input, stat="init")
+end
 
 function final_paths_helper(input::PipelineInput, extension::String)
     basenames = keys(input.model_selection.final_names)
