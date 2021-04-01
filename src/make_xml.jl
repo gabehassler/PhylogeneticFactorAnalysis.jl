@@ -55,6 +55,11 @@ function make_final_xml(input::PipelineInput, model::Int; statistic::String = ""
     bx = make_initial_xml(data, taxa, newick, model_selection, prior, model, log_factors = true)
     set_common_options(bx, final_mcmc, standardize = input.standardize_data)
 
+    if !isempty(input.merged_xml)
+        seq_bx = BEASTXMLElement(input.merged_xml)
+        BEASTXMLConstructor.merge_xml!(bx, seq_bx)
+    end
+
     filename = xml_name(input, stat=statistic)
     path = BEASTXMLConstructor.save_xml(filename, bx)
     return filename

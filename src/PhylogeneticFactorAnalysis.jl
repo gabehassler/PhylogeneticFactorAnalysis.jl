@@ -142,7 +142,7 @@ struct TraitsAndTree
 end
 
 
-struct PipelineInput
+mutable struct PipelineInput
     name::String
     directory::String
 
@@ -160,6 +160,7 @@ struct PipelineInput
     overwrite::Bool
     plot_attrs::PlotAttributes
     initialize_parameters::Bool
+    merged_xml::String
 
 
     function PipelineInput(name::String,
@@ -175,7 +176,8 @@ struct PipelineInput
                            directory = pwd(),
                            overwrite::Bool = false,
                            plot_attrs::PlotAttributes = PlotAttributes(labels_path = labels_path),
-                           initialize_parameters::Bool = false
+                           initialize_parameters::Bool = false,
+                           merged_xml::String = ""
                            )
         return new(name, directory,
                    data,
@@ -188,7 +190,8 @@ struct PipelineInput
                    beast_seed,
                    overwrite,
                    plot_attrs,
-                   initialize_parameters)
+                   initialize_parameters,
+                   merged_xml)
     end
 end
 
