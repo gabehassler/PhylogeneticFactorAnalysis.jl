@@ -117,6 +117,7 @@ const CHAIN_LENGTH = "chainLength"
 const MCMC = "mcmcOptions"
 const FORCE_ORDERED = "forceDescendingScales"
 const SPACING = "scaleSpacing"
+const SAMPLING_FREQUENCY = "subsamplingFrequency"
 
 const TASKS = "tasks"
 const PLOTS = "plotting"
@@ -259,7 +260,9 @@ end
 
 function parse_mcmc(node::EzXML.Node)
     chain_length = attr(node, CHAIN_LENGTH, Int, default = 10_000)
-    return MCMCOptions(chain_length = chain_length)
+    file_logevery = attr(node, SAMPLING_FREQUENCY, Int, default=div(chain_length, 1000))
+    return MCMCOptions(chain_length = chain_length,
+                        file_log_every = file_logevery)
 end
 
 function parse_plots(node::EzXML.Node)
