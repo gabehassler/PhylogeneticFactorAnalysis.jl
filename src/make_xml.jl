@@ -181,13 +181,17 @@ function make_initial_xml(data::Matrix{Float64},
 
     k = selection_vars.n_factors[model]
 
+
+
     bx = BEASTXMLConstructor.make_orthogonal_pfa_xml(data, taxa, newick,
                                 k,
                                 fix_first = prior.fix_first,
                                 shrink_first = prior.shrink_first,
                                 timing=true,
                                 log_factors = log_factors,
-                                force_ordered  = prior.force_ordered)
+                                force_ordered  = prior.force_ordered,
+                                forced_spacing = prior.spacing
+                                )
 
     facs = BEASTXMLConstructor.get_integratedFactorModel(bx)
 

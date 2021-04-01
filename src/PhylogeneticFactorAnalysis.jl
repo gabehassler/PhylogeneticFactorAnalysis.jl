@@ -228,6 +228,8 @@ function run_pipeline(input::PipelineInput)
 
     write_jld(input.name * "_backup.jld", input)
 
+    check_tasks!(input)
+
     if tasks.make_selection_xml
         make_selection_xml(input)
     end
@@ -262,6 +264,21 @@ function run_pipeline(input::PipelineInput)
     end
 
     cd(original_dir)
+end
+
+function check_tasks!(input::PipelineInput)
+    @unpack tasks, model_selection = input
+    if length(model_selection) == 1
+        tasks.make_selection_xml = false
+        tasks.run_selection_xml = false
+        tasks.record_selection_stats = false
+
+        if tasks.make_final_xml
+            best_models = fill(1, length(model_selection.statistics))
+            make_final_xml(input, best_models)
+            tasks.make_final_xml = false
+        end
+    end
 end
 
 const L_HEADER = "L"
@@ -439,6 +456,13 @@ function make_final_xml(input::PipelineInput)
     @unpack model_selection = input
     @unpack statistics, final_names = model_selection
     best_models = find_best_models(input)
+
+    return make_final_xml(input, best_models)
+end
+
+function make_final_xml(input::PipelineInput, best_models::Vector{Int})
+    @unpack model_selection = input
+    @unpack statistics, final_names = model_selection
 
     n = length(best_models)
 

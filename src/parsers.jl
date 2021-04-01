@@ -246,7 +246,7 @@ end
 
 function parse_shrinkage_prior(node::EzXML.Node)
     force_ordered = attr(node, FORCE_ORDERED, Bool, default = false)
-    spacing = attr(node, SPACING, Float64, default = 1.0)
+    spacing = attr(node, SPACING, Float64, default = 0.9)
     if !(0.0 < spacing <= 1.0)
         error("Attribute '$SPACING' in element '$(node.name)' must be in (0, 1]")
     end
