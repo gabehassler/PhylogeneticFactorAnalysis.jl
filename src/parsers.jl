@@ -93,11 +93,11 @@ function check_path(path::String, dirs::Vector{String})
             end
         end
 
-        if dir == pwd()
-            error("Cannot locate file $(abspath(path))")
-        else
-            error("Cannot locate file $(abspath(path)) or $(abspath(joinpath(dir, path)))")
-        end
+        unique_dirs = unique([pwd(); dirs])
+
+        error("Cannot locate file $(basename(path)) in any of the following " *
+              "directories:\n" * join(["\t" * dir for dir in dirs], '\n'))
+
     end
 end
 

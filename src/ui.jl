@@ -6,5 +6,12 @@ function pfa(input_file::String)
     else
         error("Unknown file extension. Must be either an 'xml' file or 'jld' file.")
     end
-    run_pipeline(input)
+
+    old_wd = pwd()
+    try
+        run_pipeline(input)
+    catch e
+        cd(old_wd)
+        @error "Something went wrong" exception=(e, catch_backtrace())
+    end
 end
