@@ -1,6 +1,33 @@
 library(ggplot2)
 library(wesanderson)
+library(colorspace)
 
+f1 <- function(x) {
+  return(x^2.5)
+}
+
+custom_color_scale <- function(low, mid, high, f, n = 10) {
+  lows = rev(half_scale(mid, low, f, n))
+  highs = half_scale(mid, high, f, n)
+  return(c(lows, hex(mid), highs))
+}
+
+half_scale <- function(c1, c2, f, n) {
+  colors <- character(n)
+  for (i in 1:n) {
+    colors[i] <- hex(mixcolor(f(i / n), c1, c2))
+  }
+  return(colors)
+}
+
+
+
+# load_colors <- custom_color_scale("#0000FF", "#808080", "#FF0000", f1)
+load_colors <- custom_color_scale(RGB(0, 0, 1), RGB(0.5, 0.5, 0.5), RGB(1, 0, 0), f1)
+
+
+
+# colors <- c("#0000FF", "#1515EA", "#2B2BD5", "#4040C0", "#5555AA", "#6B6B95", "#808080", "#956B6B", )
 
 ## Loadings plot
 
@@ -74,7 +101,7 @@ plot_loadings <- function(csv_path, plot_name, labels_path = NA, height_scale=1.
     geom_vline(xintercept=0, linetype="dashed") +
     geom_point(aes(y=trait, x=L, color=sign_perc), size=1.5) +
     geom_errorbarh(aes(y=trait, xmin=hpdl, xmax=hpdu, color=sign_perc), height=0.0, size=1) +
-    scale_color_gradient2(midpoint = 0.5, low="blue", mid='grey', high="red", limits=c(0, 1), name="percent > 0") +
+    scale_color_gradientn(colors = load_colors, limits=c(0, 1), name="probability > 0") +
     scale_y_discrete(limits=rev) +
     # scale_color_gradient2(low="orange", mid="white", high="purple", limits=c(-1, 1), name="L") +
     #facet_grid(~ cat, scales="free_x", space="free_x") +
@@ -108,7 +135,7 @@ plot_loadings <- function(csv_path, plot_name, labels_path = NA, height_scale=1.
   gc()
 }
 
-
+# plot_loadings("aquilegiaDiscrete_loadingsStatistics.csv", "test.pdf")
 
 ## Factor plot
 
@@ -270,4 +297,6 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
   }
   gc()
 }
+
+
 
