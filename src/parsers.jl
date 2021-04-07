@@ -118,6 +118,7 @@ const MCMC = "mcmcOptions"
 const FORCE_ORDERED = "forceDescendingScales"
 const SPACING = "scaleSpacing"
 const SAMPLING_FREQUENCY = "subsamplingFrequency"
+const DISCRETE_INDS = "discreteIndices"
 
 const TASKS = "tasks"
 const PLOTS = "plotting"
@@ -136,7 +137,11 @@ end
 
 function attr(node::EzXML.Node, key::String, type::Type; default = nothing)
     if haskey(node, key)
-        return parse(type, node[key])
+        if type <: AbstractVector
+            return [parse(eltype(type), x) for x in split(node[key])]
+        else
+            return parse(type, node[key])
+        end
     elseif !isnothing(default)
         return convert(type, default)
     else
@@ -177,10 +182,11 @@ end
 function parse_data(node::EzXML.Node; alternative_directories::Vector{String})
     data_path = attr(node, DATA_PATH, String)
     tree_path = attr(node, TREE_PATH, String)
+    discrete_inds = attr(node, DISCRETE_INDS, Vector{Int})
 
     data_path = check_path(data_path, alternative_directories)
     tree_path = check_path(tree_path, alternative_directories)
-    return TraitsAndTree(data_path, tree_path)
+    return TraitsAndTree(data_path, tree_path, discrete_inds = discrete_inds)
 end
 
 

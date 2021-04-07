@@ -7,7 +7,7 @@ const STATS = [MSE_STAT, LPD_COND]
 # const REMOVED = "removed"
 # const partition_dict = Dict(LPD_COND => false, MSE_STAT => false)
 const trait_dict = Dict(LPD_COND => JOINT, MSE_STAT => JOINT)
-const label_dict = Dict(LPD_COND => "$(trait_dict[LPD_COND]).", MSE_STAT => "traitValidation.TotalSum")
+const label_dict = Dict(LPD_COND => "$(trait_dict[LPD_COND]).likelihood", MSE_STAT => "traitValidation.TotalSum")
 const mult_dict = Dict(LPD_COND => 1, MSE_STAT => -1)
 
 const SHAPE = "shape"
@@ -49,16 +49,25 @@ end
 function make_final_xml(input::PipelineInput, model::Int; statistic::String = "")
 
     @unpack data, model_selection, prior, final_mcmc = input
-    @unpack trait_data, newick = data
+    @unpack trait_data, newick, discrete_inds = data
     @unpack data, taxa = trait_data
 
+    standardize_data = input.standardize_data
+    if length(discrete_inds) > 0 && standardize_data
+        standardize_data = false
+        standardize_continuous!(data, discrete_inds)
+    end
+
+
     bx = make_initial_xml(data, taxa, newick, model_selection, prior, model, log_factors = true)
-    set_common_options(bx, final_mcmc, standardize = input.standardize_data)
+    set_common_options(bx, final_mcmc, standardize = standardize_data)
 
     if !isempty(input.merged_xml)
         seq_bx = BEASTXMLElement(input.merged_xml)
         BEASTXMLConstructor.merge_xml!(bx, seq_bx)
     end
+
+    BEASTXMLConstructor.add_latent_liability(bx, discrete_inds)
 
     filename = xml_name(input, stat=statistic)
     path = BEASTXMLConstructor.save_xml(filename, bx)
@@ -72,7 +81,7 @@ function make_training_xml(input::PipelineInput, training_data::Matrix{Float64},
                            standardize::Bool = true)
 
     @unpack name, data, model_selection, prior = input
-    @unpack trait_data, newick = data
+    @unpack trait_data, newick, discrete_inds = data
     @unpack mcmc_options = model_selection
     bx = make_initial_xml(training_data, trait_data.taxa, newick, model_selection, prior, model, log_factors = false)
 
@@ -80,6 +89,8 @@ function make_training_xml(input::PipelineInput, training_data::Matrix{Float64},
     set_parameters(bx, parameters)
 
     add_validation(bx, validation_data, model_selection.statistics)
+
+    BEASTXMLConstructor.add_latent_liability(bx, discrete_inds)
 
     filename = xml_name(input, model = model, rep = rep)
     path = BEASTXMLConstructor.save_xml(filename, bx)
@@ -109,7 +120,9 @@ function add_validation(bx::BEASTXMLElement, validation_data::Matrix{Float64}, s
     for stat in statistics
         if stat == LPD_COND
             flpd = BEASTXMLConstructor.FactorLogPredictiveDensity(facs, like, trait_name = JOINT)
-            BEASTXMLConstructor.add_loggable(bx, flpd, already_made = false)
+            ops_ind = BEASTXMLConstructor.find_element_ind(bx, BEASTXMLConstructor.OperatorsXMLElement)
+            BEASTXMLConstructor.add_child(bx, flpd, ops_ind)
+            BEASTXMLConstructor.add_loggable(bx, flpd, already_made = true)
         elseif stat == MSE_STAT
             tree_model = BEASTXMLConstructor.get_treeModel(bx)
 

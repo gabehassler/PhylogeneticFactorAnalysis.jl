@@ -132,12 +132,13 @@ struct TraitsAndTree
     tree_path::String
     trait_data::TraitData
     newick::String
+    discrete_inds::Vector{Int}
 
-    function TraitsAndTree(data_path::String, tree_path::String)
+    function TraitsAndTree(data_path::String, tree_path::String; discrete_inds::Vector{Int} = Int[])
         traits = parse_traitdata(data_path)
         newick = read(tree_path, String)
 
-        return new(data_path, tree_path, traits, newick)
+        return new(data_path, tree_path, traits, newick, discrete_inds)
     end
 end
 
@@ -191,7 +192,8 @@ mutable struct PipelineInput
                    overwrite,
                    plot_attrs,
                    initialize_parameters,
-                   merged_xml)
+                   merged_xml,
+                   )
     end
 end
 
@@ -354,15 +356,23 @@ function plot_factors(input::PipelineInput)
     end
 end
 
+function standardize_continuous!(X::Matrix{Float64}, discrete_inds::Vector{Int})
+    continuous_inds = setdiff(1:size(X, 2), discrete_inds)
+    continuous_data = X[:, continuous_inds]
+    standardize_data!(continuous_data)
+    X[:, continuous_inds] .= continuous_data
+    return X
+end
+
 function make_selection_xml(input::PipelineInput)
     @unpack model_selection, data, name, prior = input
-    @unpack trait_data, newick = data
+    @unpack trait_data, newick, discrete_inds = data
     @unpack reps = model_selection
     @unpack data = trait_data
 
     validation_data = copy(trait_data.data)
     if input.standardize_data
-        standardize_data!(validation_data)
+        standardize_continuous!(validation_data, discrete_inds)
     end
 
     training_data = copy(validation_data)
@@ -574,6 +584,7 @@ function compute_selection_statistics(log_path::String, model_selection::ModelSe
     for i = 1:n
         stat = model_selection.statistics[i]
         ind = findall(startswith(label_dict[stat]), cols)
+
         @assert length(ind) == 1
         ind = ind[1]
 
