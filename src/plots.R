@@ -131,11 +131,11 @@ plot_loadings <- function(csv_path, plot_name, labels_path = NA, height_scale=1.
   
   # axis.title.y = element_text())
   n_traits <- length(trait_levs)
-  ggsave(plot_name, width=k * 2 + 2, height= height_scale * (n_traits * 0.15 + 1), units="in")
+  ggsave(plot_name, width=k * 2 + 2, height= height_scale * (n_traits * 0.15 + 1), units="in", limitsize=FALSE)
   gc()
 }
 
-# plot_loadings("aquilegiaDiscrete_loadingsStatistics.csv", "test.pdf")
+# plot_loadings("nwmUpScaled_loadingsStatistics.csv", "test.pdf")
 
 ## Factor plot
 

@@ -12,9 +12,10 @@ function parse_pfa(node::EzXML.Node, xml_directory::String)
     @assert node.name == PFA
     julia_seed = attr(node, JULIA_SEED, Int, default=rand(UInt32))
     directory = attr(node, DIRECTORY, String, default= pwd())
+    alternative_directories = [directory, xml_directory]
 
     data = parse_data(get_child_by_name(node, DATA),
-                      alternative_directories = [directory, xml_directory])
+                      alternative_directories = alternative_directories)
 
     default_name = sans_extension(basename(data.data_path))
     nm = attr(node, NAME, String, default = default_name)
@@ -42,6 +43,12 @@ function parse_pfa(node::EzXML.Node, xml_directory::String)
         initialize_parameters = true
     end
 
+    seq_xml = attr(node, SEQUENCE_XML, String, default="")
+    if !isempty(seq_xml)
+        seq_xml = check_path(seq_xml, alternative_directories)
+    end
+
+
     return PipelineInput(nm, data, model_selection, prior,
                          tasks = tasks,
                          julia_seed = julia_seed,
@@ -50,7 +57,8 @@ function parse_pfa(node::EzXML.Node, xml_directory::String)
                          standardize_data = standardize,
                          overwrite = overwrite,
                          final_mcmc = final_mcmc,
-                         initialize_parameters = initialize_parameters)
+                         initialize_parameters = initialize_parameters,
+                         merged_xml = seq_xml)
     # plots = parse_plots(child_nodes)
 
 end
@@ -123,6 +131,8 @@ const DISCRETE_INDS = "discreteIndices"
 const TASKS = "tasks"
 const PLOTS = "plotting"
 
+const SEQUENCE_XML = "sequenceXML"
+
 const KEYS = Dict{String, Vector{Pair{String, Symbol}}}(
     PFA =>
         [NAME => :name,
@@ -182,7 +192,7 @@ end
 function parse_data(node::EzXML.Node; alternative_directories::Vector{String})
     data_path = attr(node, DATA_PATH, String)
     tree_path = attr(node, TREE_PATH, String)
-    discrete_inds = attr(node, DISCRETE_INDS, Vector{Int})
+    discrete_inds = attr(node, DISCRETE_INDS, Vector{Int}, default=Int[])
 
     data_path = check_path(data_path, alternative_directories)
     tree_path = check_path(tree_path, alternative_directories)
