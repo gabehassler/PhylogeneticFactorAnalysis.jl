@@ -58,9 +58,17 @@ function make_final_xml(input::PipelineInput, model::Int; statistic::String = ""
         standardize_continuous!(data, discrete_inds)
     end
 
+    if input.initialize_parameters
+        params = initialize_parameters(input, data, model)
+    else
+        @unpack k, p = dimensions(input, model)
+        params = default_parameters(k, p)
+    end
+
 
     bx = make_initial_xml(data, taxa, newick, model_selection, prior, model, log_factors = true)
     set_common_options(bx, final_mcmc, standardize = standardize_data)
+    set_parameters(bx, params)
 
     if !isempty(input.merged_xml)
         seq_bx = BEASTXMLElement(input.merged_xml)
