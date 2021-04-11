@@ -597,6 +597,12 @@ function compute_selection_statistics(log_path::String, model_selection::ModelSe
             stat_data .-= @view data[:, like_ind]
         end
 
+        ess = effective_sample_size(stat_data)
+        if ess < 100
+            @warn "Selection statistic $stat in file $(basename(log_path)) " *
+                  "has low effective sample size ($ess)."
+        end
+
         means[i] = mean(stat_data)
     end
 
