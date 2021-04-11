@@ -107,12 +107,14 @@ end
 
 function make_init_xml(input::PipelineInput, data::Matrix{Float64}, model::Int; standardize::Bool = false)
     @unpack model_selection = input
-    @unpack trait_data, newick = input.data
+    @unpack trait_data, newick, discrete_inds = input.data
     @unpack taxa = trait_data
 
     bx = make_initial_xml(data, taxa, newick, model_selection, IIDPrior(ORTHOGONAL), model, log_factors = false)
     mcmc_options = MCMCOptions(chain_length = 1_000)
     set_common_options(bx, mcmc_options, standardize = standardize)
+    BEASTXMLConstructor.add_latent_liability(bx, discrete_inds)
+
 
     filename = xml_name(input, stat = INIT)
     path = BEASTXMLConstructor.save_xml(filename, bx)
