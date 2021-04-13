@@ -17,6 +17,7 @@ end
 function process_log(log_path::String, header::Union{Regex, String}, k::Int,
                     p::Int;
                     fac_header::String = "factors.",
+                    proportion_header::String = "factorProportion.",
                     rotate_factors::Bool = false,
                     find_best::Bool = true,
                     do_svd::Bool = true,
@@ -31,6 +32,10 @@ function process_log(log_path::String, header::Union{Regex, String}, k::Int,
     @assert length(L_inds) == k * p
 
     f_inds = rotate_factors ? findall(x -> startswith(x, fac_header), cols) : Int[]
+    prop_inds = findall(x -> startswith(x, proportion_header), cols)
+    prop_inds = isnothing(prop_inds) ? Int[] : prop_inds
+    compute_prop = !isnothing(prop_inds) && rotate_factors
+
     n_taxa = div(length(f_inds), k)
     @assert length(f_inds) == n_taxa * k
 
@@ -40,6 +45,22 @@ function process_log(log_path::String, header::Union{Regex, String}, k::Int,
     f_cols = cols[f_inds]
     f_data = data[:, f_inds]
 
+    prop_cols = cols[prop_inds]
+    prop_data = data[:, prop_inds]
+    all_prop_ind = 1
+    abs_prop_inds = 2:(k + 1)
+    rel_prop_inds = (k + 2):(2 * k + 1)
+    marg_prop_ind = 2 * k + 2
+
+    if compute_prop
+        @assert length(prop_inds) == marg_prop_ind
+        @assert prop_cols[all_prop_ind] == proportion_header * "factorProportion"
+        for i = 1:k
+            @assert prop_cols[abs_prop_inds[i]] == proportion_header * "absoluteProportion.$i"
+            @assert prop_cols[rel_prop_inds[i]] == proportion_header * "relativeProportion.$i"
+        end
+        @assert prop_cols[marg_prop_ind] == proportion_header * "relativeMarginalProportion"
+    end
 
     n = size(data, 1)
 
@@ -48,6 +69,7 @@ function process_log(log_path::String, header::Union{Regex, String}, k::Int,
     v_storage = zeros(n, k * p)
     l_storage = zeros(n, k * p)
     f_storage = zeros(n, n_taxa * k)
+    prop_storage = zeros(n, 2 * k + 2)
 
     ke = length(relevant_rows)
     pe = length(relevant_cols)
@@ -159,6 +181,31 @@ function process_log(log_path::String, header::Union{Regex, String}, k::Int,
             end
         end
 
+        if compute_prop
+            fill_L!(L_full, l_storage, i, transposed)
+            copyto!(Ft_full, @view f_storage[i, fac_inds])
+
+            LLt = L_full * L_full' #TODO cache these and below
+            FtF = Ft_full * Ft_full'
+            V = LLt .* FtF
+            v = diag(V)
+            sv = sum(v)
+            rel_props = v ./ sv
+            abs_props = rel_props * prop_data[i, all_prop_ind]
+
+
+            prop_storage[i, rel_prop_inds] .= rel_props
+            prop_storage[i, abs_prop_inds] .= abs_props
+            prop_storage[i, all_prop_ind] = prop_data[i, all_prop_ind]
+
+            sV = sum(V)
+            prop_storage[i, marg_prop_ind] = sv / sV
+        end
+
+
+
+
+
         # if i > 2
         #     error("break")
         # end
@@ -176,7 +223,7 @@ function process_log(log_path::String, header::Union{Regex, String}, k::Int,
         end
     end
     reflect!(v_storage, l_storage, f_storage, rotation_cols, k, p)
-    return d_storage, v_storage, l_storage, f_storage
+    return d_storage, v_storage, l_storage, f_storage, prop_storage
 end
 
 function fill_L!(L::Matrix{Float64}, data::Matrix{Float64}, row::Int,
@@ -277,15 +324,17 @@ function svd_logs(path::String, new_path::String, k::Int, p::Int;
         cols::Vector{Int} = zeros(Int, k),
         Lid::String = "L",
         fid::String = "factors.",
+        propid::String = "factorProportion.",
         rotate_factors::Bool = false,
         transposed::Bool = false,
         do_svd::Bool = true,
         relevant_rows::Vector{Int} = collect(1:k),
         relevant_cols::Vector{Int} = collect(1:p))
 
-    d, v, l, f = process_log(path, Lid, k, p, rotation_cols = cols,
+    d, v, l, f, props = process_log(path, Lid, k, p, rotation_cols = cols,
                                 transposed = transposed,
                                 fac_header = fid,
+                                proportion_header = propid,
                                 rotate_factors = rotate_factors,
                                 relevant_rows = relevant_rows,
                                 relevant_cols = relevant_cols,
@@ -297,34 +346,39 @@ function svd_logs(path::String, new_path::String, k::Int, p::Int;
     f_inds = rotate_factors ? findall(x -> startswith(x, fid), cols) : Int[]
     f_labels = string.(cols[f_inds])
 
+    prop_inds = findall(x -> startswith(x, propid), cols)
+    prop_inds = rotate_factors && !isnothing(prop_inds) ? prop_inds : Int[]
+    prop_labels = string.(cols[prop_inds])
+
 
     states = get_log(path, "state", burnin = 0.0)[2]
 
-    labels = ["state"; d_labels; v_labels; l_labels; f_labels]
-    data = [states d v l f]
+
+    labels = ["state"; d_labels; v_labels; l_labels; f_labels; prop_labels]
+    data = [states d v l f props]
 
 
     make_log(new_path, data, labels, includes_states = true)
 end
 
-function svd_logs(path::String, new_path::String;
-    prec_start = "factorPrecision",
-    Lid::String = "L",
-    fid::String = "factors.",
-    rotate_factors::Bool = false,
-    transposed::Bool = false)
+# function svd_logs(path::String, new_path::String;
+#     prec_start = "factorPrecision",
+#     Lid::String = "L",
+#     fid::String = "factors.",
+#     rotate_factors::Bool = false,
+#     transposed::Bool = false)
 
-    cols = Logs.get_cols(path)
-    p = length(findall(x -> startswith(x, prec_start), cols))
-    kp = length(findall(x -> startswith(x, Lid), cols))
-    k, r = divrem(kp, p)
-    if r != 0
-        error("Unable to determine the number of factors and traits.")
-    end
+#     cols = Logs.get_cols(path)
+#     p = length(findall(x -> startswith(x, prec_start), cols))
+#     kp = length(findall(x -> startswith(x, Lid), cols))
+#     k, r = divrem(kp, p)
+#     if r != 0
+#         error("Unable to determine the number of factors and traits.")
+#     end
 
-    return svd_logs(path, new_path, k, p, Lid = Lid, fid = fid,
-            rotate_factors = rotate_factors, transposed = transposed)
-end
+#     return svd_logs(path, new_path, k, p, Lid = Lid, fid = fid,
+#             rotate_factors = rotate_factors, transposed = transposed)
+# end
 
 
 
