@@ -11,6 +11,8 @@ import BEASTXMLConstructor.MCMCOptions
 include("PostProcessing.jl")
 using PhylogeneticFactorAnalysis.PostProcessing
 
+const WARNINGS = String[]
+
 
 ModelStat = NamedTuple{(:model, :statistics),Tuple{Int64,Array{String,1}}}
 
@@ -162,6 +164,7 @@ mutable struct PipelineInput
     plot_attrs::PlotAttributes
     initialize_parameters::Bool
     merged_xml::String
+    warnings::Vector{String}
 
 
     function PipelineInput(name::String,
@@ -263,6 +266,10 @@ function run_pipeline(input::PipelineInput)
     end
     if tasks.plot_factors
         plot_factors(input)
+    end
+
+    for warning in WARNINGS
+        @warn warning
     end
 
     cd(original_dir)
@@ -599,8 +606,11 @@ function compute_selection_statistics(log_path::String, model_selection::ModelSe
 
         ess = effective_sample_size(stat_data)
         if ess < 100
-            @warn "Selection statistic $stat in file $(basename(log_path)) " *
-                  "has low effective sample size ($ess)."
+            warning = "Selection statistic $stat in file $(basename(log_path)) " *
+                      "has low effective sample size ($ess)."
+            @warn warning
+
+            push!(WARNINGS, warning)
         end
 
         means[i] = mean(stat_data)
