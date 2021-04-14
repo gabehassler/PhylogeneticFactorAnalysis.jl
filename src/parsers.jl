@@ -92,6 +92,7 @@ end
 
 
 function check_path(path::String, dirs::Vector{String})
+    path = joinpath(splitpath(path)) # allows cross-operating system sharing of xml
     if isfile(path)
         return abspath(path)
     else
@@ -130,6 +131,7 @@ const DISCRETE_INDS = "discreteIndices"
 
 const TASKS = "tasks"
 const PLOTS = "plotting"
+const LABELS = "labels"
 
 const SEQUENCE_XML = "sequenceXML"
 
@@ -282,5 +284,6 @@ function parse_mcmc(node::EzXML.Node)
 end
 
 function parse_plots(node::EzXML.Node)
-    error("not implemented")
+    labels_path = attr(node, LABELS, String, default="")
+    return PlotAttributes(labels_path = labels_path)
 end

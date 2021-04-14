@@ -113,7 +113,7 @@ mutable struct PipelineTasks
     end
 end
 
-struct PlotAttributes
+mutable struct PlotAttributes
     labels_path::String
     burnin::Float64
     hpd_alpha::Float64
@@ -171,7 +171,6 @@ mutable struct PipelineInput
                            data::TraitsAndTree,
                            model_selection::ModelSelectionProvider,
                            prior::PriorParameters;
-                           labels_path::String = "",
                            tasks::PipelineTasks = PipelineTasks(),
                            final_mcmc::MCMCOptions = MCMCOptions(chain_length = 100_000),
                            standardize_data::Bool = true,
@@ -179,7 +178,7 @@ mutable struct PipelineInput
                            beast_seed::Int = -1,
                            directory = pwd(),
                            overwrite::Bool = false,
-                           plot_attrs::PlotAttributes = PlotAttributes(labels_path = labels_path),
+                           plot_attrs::PlotAttributes = PlotAttributes(),
                            initialize_parameters::Bool = false,
                            merged_xml::String = ""
                            )
