@@ -36,6 +36,7 @@ function parse_pfa(node::EzXML.Node, xml_directory::String)
 
     tasks = parse_child(node, TASKS, parse_tasks, default = PipelineTasks())
     plots = parse_child(node, PLOTS, parse_plots, default = PlotAttributes())
+    plots.labels_path = check_path(plots.labels_path, alternative_directories)
     final_mcmc = parse_child(node, MCMC, parse_mcmc, default = MCMCOptions(chain_length = 100_000))
 
     initialize_parameters = false
