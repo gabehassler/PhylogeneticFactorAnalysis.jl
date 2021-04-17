@@ -119,12 +119,13 @@ function prep_factors(svd_path::String, out_path::String)
 
     ind = 1
     for i = 1:n
-        taxon = split(fac_cols[ind], '.')[2]
+        s = split(fac_cols[ind], '.')
+        taxon = join(s[2:(end - 1)], '.')
         taxa[i] = taxon
         for j = 1:k
             s = split(fac_cols[ind], '.')
-            @assert s[2] == taxon
-            @assert s[3] == "$j"
+            @assert join(s[2:(end - 1)], '.') == taxon
+            @assert s[end] == "$j"
             F[i, j] = fac_means[ind]
             ind += 1
         end

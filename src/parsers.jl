@@ -36,7 +36,9 @@ function parse_pfa(node::EzXML.Node, xml_directory::String)
 
     tasks = parse_child(node, TASKS, parse_tasks, default = PipelineTasks())
     plots = parse_child(node, PLOTS, parse_plots, default = PlotAttributes())
-    plots.labels_path = check_path(plots.labels_path, alternative_directories)
+    if !isempty(plots.labels_path)
+        plots.labels_path = check_path(plots.labels_path, alternative_directories)
+    end
     final_mcmc = parse_child(node, MCMC, parse_mcmc, default = MCMCOptions(chain_length = 100_000))
 
     initialize_parameters = false
@@ -93,7 +95,7 @@ end
 
 
 function check_path(path::String, dirs::Vector{String})
-    path = joinpath(splitpath(path)) # allows cross-operating system sharing of xml
+    path = joinpath(splitpath(path)...) # allows cross-operating system sharing of xml
     if isfile(path)
         return abspath(path)
     else
@@ -286,5 +288,6 @@ end
 
 function parse_plots(node::EzXML.Node)
     labels_path = attr(node, LABELS, String, default="")
-    return PlotAttributes(labels_path = labels_path)
+    burnin = attr(node, BURNIN, Float64, default=0.1)
+    return PlotAttributes(labels_path = labels_path, burnin = burnin)
 end

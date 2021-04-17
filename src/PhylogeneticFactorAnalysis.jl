@@ -1,6 +1,6 @@
 module PhylogeneticFactorAnalysis
 
-export load_jld, pfa
+export load_jld, pfa, parse_xml, run_pipeline, start_from
 
 using BEASTXMLConstructor, BeastUtils, BeastUtils.DataStorage, BeastUtils.MatrixUtils, BeastUtils.RunBeast, BeastUtils.Logs, BeastUtils.PosteriorSummary,
       UnPack, Random, DataFrames, CSV, Statistics, RCall, EzXML, JLD, LinearAlgebra
@@ -212,6 +212,7 @@ include("writer.jl")
 include("parsers.jl")
 include("ui.jl")
 include("display.jl")
+include("tasks.jl")
 
 function run_pipeline(input::PipelineInput)
 
@@ -547,7 +548,6 @@ function plot_loadings(input::PipelineInput)
     log_paths = processed_log_paths(input)
     stat_paths = loadings_statistic_paths(input)
     plot_paths = loadings_plot_paths(input)
-    @show log_paths
     for i = 1:length(log_paths)
         prep_loadings(input, log_paths[i], stat_paths[i])
         load_plot(plot_paths[i], stat_paths[i], labels_path = input.plot_attrs.labels_path)

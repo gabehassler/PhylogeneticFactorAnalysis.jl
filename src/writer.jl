@@ -4,8 +4,11 @@ function load_jld(x::String)
     #     addrequire(file, BeastUtils.DataStorage)
     #     write(file, "pfa_input", input)
     # end
-    return load(x)["pfa_input"]
-
+    input = jldopen(x, "r") do file
+        read(file, "pfa_input")
+    end
+    # return load(x)["pfa_input"]
+    return input
     # return true
 end
 
