@@ -336,13 +336,24 @@ function initialize_parameters(input::PipelineInput,
     log_filename = log_name(input, stat=INIT)
     log_path = init_log_path(input)
     mv(log_filename, log_path, force = input.overwrite)
+    # svd_path = log_name(input, stat="svd")
+
+    # @unpack k, p = dimensions(input, model)
+    # svd_logs(log_path, svd_path, k, p,
+    #          rotate_factors = true,
+    #          relevant_rows = rows,
+    #          relevant_cols = cols)
 
     cols, data = get_log(log_path)
     L_cols = findall(startswith(L_HEADER), cols)
+    F_cols = findall(startswith(FAC_HEADER), cols)
 
-    @unpack k, p = dimensions(input, model)
+
+    @unpack n, k, p = dimensions(input, model)
     L = reshape(data[end, L_cols], p, k)'
-    Lsvd = svd(L)
+    F = reshape(data[end, F_cols], k, n)
+    d = (1 / n) * diag(F * F')
+    Lsvd = svd(Diagonal(d) * L)
 
     @unpack S, Vt = Lsvd
     check_spacing!(S, input.prior)
