@@ -23,6 +23,14 @@ const FROM_FIELDS = Dict{String, Symbol}(
                                          "plots" => :plot_loadings
                                         )
 
+const ONLY_FIELDS = Dict{String, Vector{Symbol}}(
+                            "plots" => [:plot_loadings, :plot_factors],
+                            "initial_xml" => [:make_selection_xml],
+                            "model_selection" => [:make_selection_xml,
+                                                  :run_selection_xml,
+                                                  :record_selection_stats]
+)
+
 
 
 function start_from(s::String, input::PipelineInput)
@@ -40,4 +48,18 @@ function start_from(s::String, input::PipelineInput)
     end
 
     tasks.make_final_xml = true; @warn "TODO: de-couple names from make_final_xml"
+end
+
+function run_only(s::String, input::PipelineInput)
+    @unpack tasks = input
+
+    @assert all(fieldnames(typeof(tasks)) .== TASK_FIELDNAMES)
+    do_fields = ONLY_FIELDS[s]
+    dont_fields = setdiff(TASK_FIELDNAMES, do_fields)
+    for field in do_fields
+        setfield!(tasks, field, true)
+    end
+    for field in dont_fields
+        setfield!(tasks, field, false)
+    end
 end
