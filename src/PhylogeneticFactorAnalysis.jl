@@ -1,6 +1,6 @@
 module PhylogeneticFactorAnalysis
 
-export load_jld, pfa, parse_xml, run_pipeline, start_from
+export load_jld, pfa, parse_xml, run_pipeline, start_from, run_only
 
 using BEASTXMLConstructor, BeastUtils, BeastUtils.DataStorage, BeastUtils.MatrixUtils, BeastUtils.RunBeast, BeastUtils.Logs, BeastUtils.PosteriorSummary,
       UnPack, Random, DataFrames, CSV, Statistics, RCall, EzXML, JLD, LinearAlgebra
