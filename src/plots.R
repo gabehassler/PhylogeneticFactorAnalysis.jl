@@ -36,7 +36,7 @@ plot_loadings <- function(csv_path, plot_name, labels_path = NA, height_scale=1.
   df  <- read.csv(csv_path, header=TRUE, encoding="UTF-8")
   
   if (!is.na(labels_path)) {
-    labels_df <- read.csv(labels_path, header=TRUE, encoding="UTF-8")
+    labels_df <- read.csv(labels_path, header=TRUE, fileEncoding="UTF-8-BOM")
     
     trait_levs <- labels_df$pretty
     cat_levs <- unique(labels_df$cat)
@@ -53,6 +53,7 @@ plot_loadings <- function(csv_path, plot_name, labels_path = NA, height_scale=1.
     df$cat <- rep("NA", nrow(df))
     cat_levs <- c("NA")
   }
+  
 
   wes_pal <- wes_palette("GrandBudapest2")
   pal <- c(wes_pal[1], "grey", wes_pal[4])
@@ -141,10 +142,10 @@ plot_loadings <- function(csv_path, plot_name, labels_path = NA, height_scale=1.
   gc()
 }
 
-mammals_dir = "C:\\Users\\gabeh\\OneDrive\\SD_storage\\many_traits\\public\\integrated_factors\\data\\mammalian_life_history"
-labels_path = file.path(mammals_dir, "mammals_labels.csv")
-stats_path = file.path(mammals_dir, "mammals", "mammals_loadingsStatistics.csv")
-plot_loadings(stats_path, "test.pdf", labels_path = labels_path)
+# mammals_dir = "C:\\Users\\gabeh\\OneDrive\\SD_storage\\many_traits\\public\\integrated_factors\\data\\mammalian_life_history"
+# labels_path = file.path(mammals_dir, "mammals_labels.csv")
+# stats_path = file.path(mammals_dir, "mammals", "mammals_loadingsStatistics.csv")
+# plot_loadings(stats_path, "test.pdf", labels_path = labels_path)
 
 ## Factor plot
 
@@ -308,16 +309,20 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
       trait <- x[,k]
       tree <- prep_trait(base_tree, trait)
       
-      p <- plot_tree(tree, c("blue", "red"), border=border, line_width=line_width, tip_labels=tip_labels, layout=layout, new_labels=new_labels)
+      p1 <- plot_tree(tree, c("blue", "red"), border=border, line_width=line_width, tip_labels=tip_labels, layout=layout, new_labels=new_labels, color_tree=FALSE)
       # p <- gheatmap(p, odf2, offset=0, width=0.05, legend_title="origin") + scale_fill_brewer(palette = "Set2") + scale_x_ggtree() + scale_y_continuous(expand=c(0, 0.3))
       # p <- p + scale_x_continuous(expand = c(.1, .1))
       pname <- paste(name, k, ".svg", sep="")
+      p2 <- p1 # + new_scale_fill()# + new_scale_color()
       
       if (include_class) {
-        p <- my_gheatmap(p, classes, offset=0, width=heat_width, colnames=FALSE, legend_title=colnames(classes)[1]) + class_fills + class_colors
+        # p3 <- my_gheatmap(p2, classes, offset=0, width=heat_width, colnames_angle=90, colnames=TRUE, legend_title=colnames(classes)[1]) + class_fills # + class_colors
+        p3 <- my_gheatmap(p2, classes, offset=0, width=heat_width, colnames=FALSE, legend_title=colnames(classes)[1]) + class_fills + class_colors
         # scale_fill_manual(values=class_palette, name=colnames(classes)[1])
         # scale_x_ggtree() +
         # scale_y_continuous(expand=c(0, 0.3))
+      } else {
+        p3 <- p2
       }
       
       print(paste("saving", pname))
@@ -325,7 +330,7 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
       
       
       svg(pname, height=height, width=width)
-      print(p)
+      print(p2)
       dev.off()
     }
   }
