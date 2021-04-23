@@ -141,13 +141,20 @@ function prep_factors(svd_path::String, out_path::String)
     return taxa, F
 end
 
-function factor_plot(plot_path::String, stats_path::String, tree_path::String)
+function factor_plot(plot_path::String, stats_path::String, tree_path::String,
+                     class_path::String)
     @rput plot_path
     @rput stats_path
     @rput tree_path
     @rput R_PLOT_SCRIPT
+
+    if isempty(class_path)
+        class_path = missing
+    end
+    class_array = [class_path]
+    @rput class_array
     R"""
     source(R_PLOT_SCRIPT)
-    plot_factor_tree(plot_path, tree_path, stats_path)
+    plot_factor_tree(plot_path, tree_path, stats_path, class_path=class_array[[1]])
     """
 end

@@ -36,9 +36,15 @@ function parse_pfa(node::EzXML.Node, xml_directory::String)
 
     tasks = parse_child(node, TASKS, parse_tasks, default = PipelineTasks())
     plots = parse_child(node, PLOTS, parse_plots, default = PlotAttributes())
-    if !isempty(plots.labels_path)
-        plots.labels_path = check_path(plots.labels_path, alternative_directories)
+
+    plot_paths = [:labels_path, :class_path]
+    for symb in plot_paths
+        path = getfield(plots, symb)
+        if !isempty(path)
+            setfield!(plots, symb, check_path(path, alternative_directories))
+        end
     end
+
     final_mcmc = parse_child(node, MCMC, parse_mcmc, default = MCMCOptions(chain_length = 100_000))
 
     initialize_parameters = false
@@ -134,7 +140,8 @@ const DISCRETE_INDS = "discreteIndices"
 
 const TASKS = "tasks"
 const PLOTS = "plotting"
-const LABELS = "labels"
+const LABELS = "traitLabels"
+const CLASSIFICATION = "taxonClassification"
 
 const SEQUENCE_XML = "sequenceXML"
 
@@ -288,6 +295,8 @@ end
 
 function parse_plots(node::EzXML.Node)
     labels_path = attr(node, LABELS, String, default="")
+    class_path = attr(node, CLASSIFICATION, String, default="")
     burnin = attr(node, BURNIN, Float64, default=0.1)
-    return PlotAttributes(labels_path = labels_path, burnin = burnin)
+    return PlotAttributes(labels_path = labels_path, class_path = class_path,
+                          burnin = burnin)
 end

@@ -37,6 +37,7 @@ plot_loadings <- function(csv_path, plot_name, labels_path = NA, height_scale=1.
   
   if (!is.na(labels_path)) {
     labels_df <- read.csv(labels_path, header=TRUE, encoding="UTF-8")
+    
     trait_levs <- labels_df$pretty
     cat_levs <- unique(labels_df$cat)
     
@@ -55,6 +56,7 @@ plot_loadings <- function(csv_path, plot_name, labels_path = NA, height_scale=1.
 
   wes_pal <- wes_palette("GrandBudapest2")
   pal <- c(wes_pal[1], "grey", wes_pal[4])
+  
   df$trait <- factor(df$trait, levels=trait_levs)
   df$cat <- factor(df$cat, levels=cat_levs)
   df$L <- sapply(df$L, as.numeric)
@@ -62,6 +64,9 @@ plot_loadings <- function(csv_path, plot_name, labels_path = NA, height_scale=1.
   for (i in 1:length(df$perc)) {
     if (df$L[i] < 0.0) {
       df$sign_perc[i] <- 1.0 - df$sign_perc[i]
+    }
+    if (df$hpdu[i] == 0 && df$hpdl[i] == 0) {
+      df$sign_perc[i] = NA
     }
   }
   
@@ -136,7 +141,10 @@ plot_loadings <- function(csv_path, plot_name, labels_path = NA, height_scale=1.
   gc()
 }
 
-# plot_loadings("nwmUpScaled_loadingsStatistics.csv", "test.pdf")
+mammals_dir = "C:\\Users\\gabeh\\OneDrive\\SD_storage\\many_traits\\public\\integrated_factors\\data\\mammalian_life_history"
+labels_path = file.path(mammals_dir, "mammals_labels.csv")
+stats_path = file.path(mammals_dir, "mammals", "mammals_loadingsStatistics.csv")
+plot_loadings(stats_path, "test.pdf", labels_path = labels_path)
 
 ## Factor plot
 
@@ -255,12 +263,14 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
     classes <- data.frame(x = class_df[,2])
     colnames(classes) <- c(colnames(class_df)[2])
     row.names(classes) <- class_df$taxon
-  }
-  class_fills = discrete_scale("fill", "manual", colorRampPalette(brewer.pal(min(nrow(unique(classes)), 12), "Set3")), name=colnames(classes)[1]) #scale_fill_brewer(palette="Set2")
-  class_colors = discrete_scale("color", "manual", colorRampPalette(brewer.pal(min(nrow(unique(classes)), 12), "Set3")), name=colnames(classes)[1])
-  if (!all(is.na(class_palette))) {
-    class_fills = scale_fill_manual(values=class_palette, name=colnames(classes)[1])
-    class_colors = scale_color_manual(values=class_palette, name=colnames(classes)[1])
+    
+    class_fills = discrete_scale("fill", "manual", colorRampPalette(brewer.pal(min(nrow(unique(classes)), 12), "Set3")), name=colnames(classes)[1]) #scale_fill_brewer(palette="Set2")
+    class_colors = discrete_scale("color", "manual", colorRampPalette(brewer.pal(min(nrow(unique(classes)), 12), "Set3")), name=colnames(classes)[1])
+    
+    if (!all(is.na(class_palette))) {
+      class_fills = scale_fill_manual(values=class_palette, name=colnames(classes)[1])
+      class_colors = scale_color_manual(values=class_palette, name=colnames(classes)[1])
+    }
   }
   
   n_factors = length(factors)

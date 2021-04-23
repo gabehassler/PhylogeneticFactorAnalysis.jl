@@ -115,17 +115,20 @@ end
 
 mutable struct PlotAttributes
     labels_path::String
+    class_path::String
     burnin::Float64
     hpd_alpha::Float64
     scale_loadings_by_factors::Bool
 
     function PlotAttributes(;
                             labels_path::String = "",
+                            class_path::String = "",
                             burnin::Float64 = 0.1,
                             hpd_alpha::Float64 = 0.05,
                             scale_loadings_by_factors::Bool = true
                             )
-        return new(labels_path, burnin, hpd_alpha, scale_loadings_by_factors)
+        return new(labels_path, class_path, burnin, hpd_alpha,
+                   scale_loadings_by_factors)
     end
 end
 
@@ -366,7 +369,8 @@ function plot_factors(input::PipelineInput)
 
     for i = 1:length(log_paths)
         prep_factors(log_paths[i], stat_paths[i])
-        factor_plot(plot_paths[i], stat_paths[i], input.data.tree_path)
+        factor_plot(plot_paths[i], stat_paths[i], input.data.tree_path,
+                    input.plot_attrs.class_path)
     end
 end
 
