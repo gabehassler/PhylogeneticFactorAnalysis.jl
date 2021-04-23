@@ -178,7 +178,8 @@ plot_tree <- function(tree, colors,
                       layout="rectangular",
                       color_tree=TRUE,
                       fan.angle=15,
-                      new_labels=NA) {
+                      new_labels=NA,
+                      limits=NA) {
   p <- ggtree(tree, layout=layout, open.angle=fan.angle, size = 0)
   if (border){
     # p <- p + geom_tree(size=line_width)
@@ -187,9 +188,16 @@ plot_tree <- function(tree, colors,
   }
   if (color_tree) {
     p <- p + geom_tree(aes(color=trait),
-                       continuous = TRUE, size=line_width) +
-      scale_color_gradient2(midpoint = 0.0, low=colors[[1]], mid='grey', high=colors[[2]]) +
-      labs(color="factor value")
+                       continuous = TRUE, size=line_width)
+    if (is.na(limits)) {
+      p <- p + scale_color_gradient2(midpoint = 0.0, low=colors[[1]], mid='grey', high=colors[[2]])
+    } else {
+      p <- p + scale_color_gradient2(midpoint = 0.0, low=colors[[1]], mid='grey', high=colors[[2]], limits=limits)
+      
+    }
+    
+    p <- p + labs(color="factor value")
+
   } else {
     p <- p + geom_tree(size=line_width)
   }
@@ -222,7 +230,8 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
                              class_palette=NA,
                              combined=TRUE,
                              fan.angle=30.0,
-                             new_labels=NA
+                             new_labels=NA,
+                             common_scale=FALSE
 ) {
 
   x <- as.matrix(read.csv(factors_path, header=TRUE))
@@ -237,6 +246,16 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
   rownames(x) <- taxa
   n <- length(taxa)
   x <- scale(x)
+  
+  limits <- NA
+  if (common_scale) {
+    x_min = min(x)
+    x_max = max(x)
+    limits = c(x_min, x_max)
+  }
+
+  
+  
   
 
   
@@ -309,15 +328,14 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
       trait <- x[,k]
       tree <- prep_trait(base_tree, trait)
       
-      p1 <- plot_tree(tree, c("blue", "red"), border=border, line_width=line_width, tip_labels=tip_labels, layout=layout, new_labels=new_labels, color_tree=FALSE)
+      p1 <- plot_tree(tree, c("blue", "red"), border=border, line_width=line_width, tip_labels=tip_labels, layout=layout, new_labels=new_labels, limits=limits)
       # p <- gheatmap(p, odf2, offset=0, width=0.05, legend_title="origin") + scale_fill_brewer(palette = "Set2") + scale_x_ggtree() + scale_y_continuous(expand=c(0, 0.3))
       # p <- p + scale_x_continuous(expand = c(.1, .1))
-      pname <- paste(name, k, ".svg", sep="")
-      p2 <- p1 # + new_scale_fill()# + new_scale_color()
+      p2 <- p1 # + new_scale_fill() + new_scale_color()
       
       if (include_class) {
         # p3 <- my_gheatmap(p2, classes, offset=0, width=heat_width, colnames_angle=90, colnames=TRUE, legend_title=colnames(classes)[1]) + class_fills # + class_colors
-        p3 <- my_gheatmap(p2, classes, offset=0, width=heat_width, colnames=FALSE, legend_title=colnames(classes)[1]) + class_fills + class_colors
+        p3 <- gheatmap(p2, classes, offset=0, width=heat_width, colnames=FALSE, legend_title=colnames(classes)[1]) + class_fills # + class_colors
         # scale_fill_manual(values=class_palette, name=colnames(classes)[1])
         # scale_x_ggtree() +
         # scale_y_continuous(expand=c(0, 0.3))
@@ -325,12 +343,13 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
         p3 <- p2
       }
       
+      pname <- paste(name, k, ".svg", sep="")
       print(paste("saving", pname))
       # p <- p_origins %>% insert_left(p, width=8)
       
       
       svg(pname, height=height, width=width)
-      print(p2)
+      print(p3)
       dev.off()
     }
   }
