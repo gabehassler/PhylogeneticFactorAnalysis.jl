@@ -21,7 +21,8 @@ const TASK_FIELDNAMES = [:make_selection_xml,
 
 const FROM_FIELDS = Dict{String, Symbol}(
                             "plots" => :plot_loadings,
-                            "selection_stats" => :record_selection_stats
+                            "selection_stats" => :record_selection_stats,
+                            "process_final" => :process_final_log
                                         )
 
 const ONLY_FIELDS = Dict{String, Vector{Symbol}}(
