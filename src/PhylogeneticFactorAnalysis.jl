@@ -250,6 +250,7 @@ function run_pipeline(input::PipelineInput)
     end
 
     if tasks.record_selection_stats && !tasks.run_selection_xml
+        check_stats_exist(input)
         m, r = size(input.model_selection)
         for i = 1:r
             for j = 1:m
