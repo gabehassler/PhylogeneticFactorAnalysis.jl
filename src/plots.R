@@ -179,7 +179,8 @@ plot_tree <- function(tree, colors,
                       color_tree=TRUE,
                       fan.angle=15,
                       new_labels=NA,
-                      limits=NA) {
+                      limits=NA,
+                      labels_offset=0) {
   p <- ggtree(tree, layout=layout, open.angle=fan.angle, size = 0)
   if (border){
     # p <- p + geom_tree(size=line_width)
@@ -204,9 +205,9 @@ plot_tree <- function(tree, colors,
 
   if (tip_labels) {
     if (!is.na(new_labels)) {
-      p <- p %<+% new_labels + geom_tiplab(aes(label=genus), offset=0.02)
+      p <- p %<+% new_labels + geom_tiplab(aes(label=genus), offset=labels_offset)
     } else {
-      p <- p + geom_tiplab(align=TRUE)
+      p <- p + geom_tiplab(align=FALSE, offset=labels_offset)
     }
   } else {
     # p <- p + geom_tiplab(aes(label=character(1)), align=TRUE)
@@ -232,7 +233,8 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
                              fan.angle=30.0,
                              new_labels=NA,
                              common_scale=FALSE,
-                             extra_offset=0
+                             extra_offset=0,
+                             labels_offset=0.02
 ) {
 
   x <- as.matrix(read.csv(factors_path, header=TRUE))
@@ -308,7 +310,7 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
 
 
   if (combined) {
-    p1 <- plot_tree(base_tree, "", border=border, line_width=line_width, tip_labels = tip_labels, layout=combined_layout, color_tree=FALSE, new_labels=new_labels)
+    p1 <- plot_tree(base_tree, "", border=border, line_width=line_width, tip_labels = tip_labels, layout=combined_layout, color_tree=FALSE, new_labels=new_labels, labels_offset=labels_offset)
     pname <- paste(name, "_factors.svg", sep="")
     p2 <- p1
     if (include_class) {
@@ -334,7 +336,7 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
       trait <- x[,k]
       tree <- prep_trait(base_tree, trait)
 
-      p1 <- plot_tree(tree, c("blue", "red"), border=border, line_width=line_width, tip_labels=tip_labels, layout=layout, new_labels=new_labels, limits=limits)
+      p1 <- plot_tree(tree, c("blue", "red"), border=border, line_width=line_width, tip_labels=tip_labels, layout=layout, new_labels=new_labels, limits=limits, labels_offset=labels_offset)
       # p <- gheatmap(p, odf2, offset=0, width=0.05, legend_title="origin") + scale_fill_brewer(palette = "Set2") + scale_x_ggtree() + scale_y_continuous(expand=c(0, 0.3))
       # p <- p + scale_x_continuous(expand = c(.1, .1))
       p2 <- p1 # + new_scale_fill() + new_scale_color()
