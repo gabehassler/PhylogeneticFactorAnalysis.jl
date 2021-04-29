@@ -94,7 +94,6 @@ Here is a more complex xml:
     <mcmcOptions chainLength="100000"/>
   </modelSelection>
   <mcmcOptions chainLength="100000"/>
-  <plotting labels="aquilegia_labels_binary.csv"/>
 </phylogeneticFactorAnalysis>
 ```
 
@@ -125,6 +124,19 @@ Element: `orthogonalShrinkagePrior`
  - Attributes: __TODO__
 
 Element: `modelSelection`
- - Test
+ - Supplies the models you want to compare to each other.
+ - Attributes
+   - `repeats`: Specifies the "k" value for k-fold cross validation. Should be a positive integer > 1 (although we wouldn't recommend going below 5).
+   - `selectionStatistic` (optional): the specific selection statistic you would like to use. Values are "CLPD" or "MSE".
+   - `burnin` (optional): the MCMC burnin before evaluating the selection statistic. Should be any number between 0 and 1. Defaults to 0.25.
+ - Sub-element: `nFactors`
+   - specify the number of factors for each model
+ - Sub-element: `mcmcOptions` (optional)
+   - Meta-parameters related to the MCMC simulation
+   - Attributes
+     - `chainLength`: the number of states to run the MCMC chain. Defaults to `10000`.
+
+Element: `mcmcOptions`
+ - Meta-parameters related to the final MCMC simulation
 
 
