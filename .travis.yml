@@ -14,6 +14,22 @@ env:
 matrix:
   allow_failures:
     - julia: nightly
+  include:
+    - stage: "Documentation"
+      julia: 1.5
+      os: linux
+      script:
+        - julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd()));
+                                               Pkg.instantiate()'
+        - julia --project=docs/ docs/make.jl
+      before_script:
+        # Install R
+        - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB9; fi
+        - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo add-apt-repository -y "deb http://cran.rstudio.com/bin/linux/ubuntu $(lsb_release -s -c)/"; fi
+        - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo apt-get update -qq -y; fi
+        - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo apt-get install --allow-unauthenticated git r-base r-base-dev r-recommended -y; fi
+      # - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo R -e 'install.packages("ggplot2", dep=TRUE, repos="http://cran.us.r-project.org")'; fi # takes ~ 6min 2018-06-02
+      after_success: skip
 notifications:
   email: false
 codecov: true
@@ -37,20 +53,3 @@ before_install:
   # - echo $R_HOME
 
 
-jobs:
-  include:
-    - stage: "Documentation"
-      julia: 1.5
-      os: linux
-      script:
-        - julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd()));
-                                               Pkg.instantiate()'
-        - julia --project=docs/ docs/make.jl
-      before_script:
-        # Install R
-        - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB9; fi
-        - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo add-apt-repository -y "deb http://cran.rstudio.com/bin/linux/ubuntu $(lsb_release -s -c)/"; fi
-        - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo apt-get update -qq -y; fi
-        - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo apt-get install --allow-unauthenticated git r-base r-base-dev r-recommended -y; fi
-      # - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo R -e 'install.packages("ggplot2", dep=TRUE, repos="http://cran.us.r-project.org")'; fi # takes ~ 6min 2018-06-02
-      after_success: skip
