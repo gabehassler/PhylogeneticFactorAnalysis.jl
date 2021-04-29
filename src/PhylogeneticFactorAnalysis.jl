@@ -1,11 +1,14 @@
 module PhylogeneticFactorAnalysis
 
-
+using Pkg.Artifacts
 
 if haskey(ENV, "BEAST_HOME")
     # do nothing
 else
-    @warn "Cannot locate BEAST."
+    jar_path = joinpath(artifact"beast_jar", "beast.jar")
+    @show jar_path
+
+    ENV["BEAST_HOME"] = jar_path
 end
 
 using BEASTXMLConstructor, BeastUtils, BeastUtils.DataStorage, BeastUtils.MatrixUtils, BeastUtils.RunBeast, BeastUtils.Logs, BeastUtils.PosteriorSummary,
