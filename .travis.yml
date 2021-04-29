@@ -28,7 +28,8 @@ before_install:
 
   - echo $R_HOME
   - echo TEST
-  - ls
+  - R_HOME=$(R RHOME)
+  - echo $R_HOME
 
 
 jobs:
