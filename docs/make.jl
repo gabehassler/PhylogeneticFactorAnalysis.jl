@@ -1,3 +1,3 @@
 using Documenter, PhylogeneticFactorAnalysis
 
-makedocs(sitename="My Documentation")
+makedocs(sitename="PhylogeneticFactorAnalysis Documentation")
