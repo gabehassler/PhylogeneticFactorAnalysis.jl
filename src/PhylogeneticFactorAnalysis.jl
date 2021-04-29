@@ -5,7 +5,7 @@ module PhylogeneticFactorAnalysis
 if haskey(ENV, "BEAST_HOME")
     # do nothing
 else
-    error("Cannot locate BEAST.")
+    @warn "Cannot locate BEAST."
 end
 
 using BEASTXMLConstructor, BeastUtils, BeastUtils.DataStorage, BeastUtils.MatrixUtils, BeastUtils.RunBeast, BeastUtils.Logs, BeastUtils.PosteriorSummary,
