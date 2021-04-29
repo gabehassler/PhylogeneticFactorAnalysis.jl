@@ -1,0 +1,6 @@
+[beast_jar]
+git-tree-sha1 = "b382a45ad3d45d1d173af6703cdd469c168cc378"
+
+    [[beast_jar.download]]
+    sha256 = "5214c4205afb3221c2c0c31c3980675bf8782a2c858cbdc872dbe9663e464d74"
+    url = "https://github.com/gabehassler/PhylogeneticFactorAnalysis.jl/releases/download/v0.0.1/beastJar.tar.gz"
