@@ -1,6 +1,6 @@
 # PhylogeneticFactorAnalysis.jl Documentation
 
-## Installation instructions
+## Installation
 
 ### Install Java
 
@@ -57,5 +57,6 @@ check_r()
 It's OK (and likely inevitable) if `check_r()` results in several R warnings.
 As long as it does not throw an error and terminates with `all necessary R packages installed` your R environment should be set up appropriately.
 
-## XML Instructions
+## Instructions
 
+PhylogeneticFactorAnalysis takes a relatively simple xml file and uses it to build and run BEAST xml files.
