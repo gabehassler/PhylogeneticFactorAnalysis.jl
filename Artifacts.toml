@@ -1,5 +1,5 @@
 [beast_jar]
-git-tree-sha1 = "b382a45ad3d45d1d173af6703cdd469c168cc378"
+git-tree-sha1 = "399c14b43df91ab9ae07785fd1e0471e9bf5f19a"
 
     [[beast_jar.download]]
     sha256 = "5214c4205afb3221c2c0c31c3980675bf8782a2c858cbdc872dbe9663e464d74"
