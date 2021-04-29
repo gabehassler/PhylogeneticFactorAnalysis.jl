@@ -140,3 +140,8 @@ Element: `mcmcOptions`
  - Meta-parameters related to the final MCMC simulation
 
 
+## Running analyses
+The only function required to run analyses is `pfa`.
+If `test.xml` is the path to your xml file, simply enter `pfa("test.xml")` into the Julia REPL to run the pipeline.
+
+
