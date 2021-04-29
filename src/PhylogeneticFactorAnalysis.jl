@@ -2,14 +2,13 @@ module PhylogeneticFactorAnalysis
 
 using Pkg.Artifacts
 
-if haskey(ENV, "BEAST_HOME")
-    println("Using BEAST_HOME environment variable.")
+const BEAST_HOME = "BEAST_HOME"
+
+if haskey(ENV, BEAST_HOME)
     # do nothing
 else
     jar_path = joinpath(artifact"beast_jar", "beast.jar")
-    @show jar_path
-
-    ENV["BEAST_HOME"] = jar_path
+    ENV[BEAST_HOME] = jar_path
 end
 
 using BEASTXMLConstructor, BeastUtils, BeastUtils.DataStorage, BeastUtils.MatrixUtils, BeastUtils.RunBeast, BeastUtils.Logs, BeastUtils.PosteriorSummary,
@@ -26,6 +25,8 @@ export load_jld,
        run_only,
        check_beast,
        check_r
+
+check_beast()
 
 include("dependencies.jl")
 
