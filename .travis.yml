@@ -23,6 +23,8 @@ matrix:
                                                Pkg.instantiate()'
         - julia --project=docs/ docs/make.jl
       before_script:
+        - if [ -z "$DOCUMENTER_KEY" ]; then echo "cannot find DOCUMENTER_KEY"; fi
+
         # Install R
         - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB9; fi
         - if [ "$TRAVIS_OS_NAME" == "linux" ]; then sudo add-apt-repository -y "deb http://cran.rstudio.com/bin/linux/ubuntu $(lsb_release -s -c)/"; fi
