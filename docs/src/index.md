@@ -60,3 +60,71 @@ As long as it does not throw an error and terminates with `all necessary R packa
 ## Instructions
 
 PhylogeneticFactorAnalysis takes a relatively simple xml file and uses it to build and run BEAST xml files.
+Users must specify the following:
+1. a csv file containing the trait data
+2. newick-formatted tree file
+3. prior and constraint on the loadings matrix
+
+Here is the simplest xml you can supply
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<phylogeneticFactorAnalysis
+    name="test" <!-- this will be the header of all folders and files created -->
+    standardizeTraits="true" <!-- we recommend standardizing traits, but you may set to false if desired-->
+    >
+  <data traits="test_traits.csv" <!-- path to your traits file -->
+        tree="test_newick.txt" <!-- path to your newick file -->
+        />
+  <iidPrior constraint="upperTriangular" <!-- this is the specific prior you use on the loadings. the options are "upperTriangular", "orthogonal", or "hybrid". -->
+        />
+  <modelSelection>
+    <nFactors>5</nFactors> <!-- this is the number of factors you want to use. you may supply as many as you want, (e.g. <nFactors>1 2 3 4 5</nFactors>). If you only supply one it will skip model selection and simply choose that number of factors for the final analysis-->
+  </modelSelection>
+</phylogeneticFactorAnalysis>
+```
+
+Here is a more complex xml:
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<phylogeneticFactorAnalysis name="aquilegiaBinary" partitionSeed="666" mcmcSeed="666" overwrite="true" standardizeTraits="true">
+  <data traits="aquilegia_binary.csv" tree="aquilegia_newick.txt" discreteIndices="11 12 13 14"/>
+  <iidPrior constraint="orthogonal"/>
+  <modelSelection repeats="5" selectionStatistic="CLPD" burnin="0.25">
+    <nFactors>1 2 3 4 5</nFactors>
+    <mcmcOptions chainLength="100000"/>
+  </modelSelection>
+  <mcmcOptions chainLength="100000"/>
+  <plotting labels="aquilegia_labels_binary.csv"/>
+</phylogeneticFactorAnalysis>
+```
+
+### Explanation of elements and attributes
+Element: `phylogeneticFactorAnalysis`
+ - This is the root element that encompasses all other elements.
+ - Attributes
+   - `name`: the name of the folder and files that will be created. This can be set to anything
+   - `partitionSeed` (optional): the random number seed used for creating the training and test data sets. Can be any positive integer.
+   - `mcmcSeed` (optional): the random number seed for the BEAST MCMC simulation
+   - `overwrite` (optional): allows you to overwrite any existing folders. Possible values are "true" or "false". __If this is set to "true", it will automatically delete everything in the folder specified by `name`.__
+   - `standardizeTraits` (optional): specifies whether data should be standardized (i.e. centered and scaled) prior to analysis. Possible values are "true" or "false".
+
+Element: `data`
+ - Locations and instructions related to the input data.
+ - Attributes
+   - `traits`: path to csv file where your trait data is stored. The csv file must have the first column corresponding to the taxa with column header "taxon".
+   - `tree`: path to the newick-formatted tree file.
+   - `discreteIndices` (optional): if any traits are discrete, list the indices that correspond to the discrete traits.
+
+Element: `iidPrior`
+ - This is the prior. You must specify one prior, but you may specify `orthogonalShrinkagePrior`  (below) instead of `iidPrior`.
+ - Attributes
+   - `constraint`: the constraint on the loadings matrix. Options are "upperTriangular", "orthogonal", or "hybrid".
+
+Element: `orthogonalShrinkagePrior`
+ - This is the prior. You must specify one prior, but you may specify `iidPrior` (above) instead of `orthogonalShrinkagePrior`.
+ - Attributes: __TODO__
+
+Element: `modelSelection`
+ - Test
+
+
