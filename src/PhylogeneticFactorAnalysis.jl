@@ -3,6 +3,7 @@ module PhylogeneticFactorAnalysis
 using Pkg.Artifacts
 
 if haskey(ENV, "BEAST_HOME")
+    println("Using BEAST_HOME environment variable.")
     # do nothing
 else
     jar_path = joinpath(artifact"beast_jar", "beast.jar")
