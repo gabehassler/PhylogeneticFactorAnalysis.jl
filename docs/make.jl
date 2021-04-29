@@ -1,3 +1,19 @@
-using Documenter, PhylogeneticFactorAnalysis
+using Documenter
+using PhylogeneticFactorAnalysis
 
-makedocs(sitename="PhylogeneticFactorAnalysis Documentation")
+makedocs(
+    sitename = "PhylogeneticFactorAnalysis",
+    format = Documenter.HTML(),
+    modules = [PhylogeneticFactorAnalysis]
+)
+
+deploydocs(
+    repo = "https://github.com/gabehassler/PhylogeneticFactorAnalysis.jl.git",
+)
+
+# Documenter can also automatically deploy documentation to gh-pages.
+# See "Hosting Documentation" and deploydocs() in the Documenter manual
+# for more information.
+#=deploydocs(
+    repo = "<repository url>"
+)=#
