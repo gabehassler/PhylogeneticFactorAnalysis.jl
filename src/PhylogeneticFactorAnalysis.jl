@@ -2,14 +2,6 @@ module PhylogeneticFactorAnalysis
 
 using Pkg.Artifacts
 
-const BEAST_HOME = "BEAST_HOME"
-
-if haskey(ENV, BEAST_HOME)
-    # do nothing
-else
-    jar_path = joinpath(artifact"beast_jar", "beast.jar")
-    ENV[BEAST_HOME] = jar_path
-end
 
 using BEASTXMLConstructor, BeastUtils, BeastUtils.DataStorage, BeastUtils.MatrixUtils, BeastUtils.RunBeast, BeastUtils.Logs, BeastUtils.PosteriorSummary,
       UnPack, Random, DataFrames, CSV, Statistics, RCall, EzXML, JLD, LinearAlgebra
@@ -26,7 +18,8 @@ export load_jld,
        check_beast,
        check_r
 
-check_beast()
+
+const BEAST_HOME = "BEAST_HOME"
 
 include("dependencies.jl")
 
@@ -190,6 +183,7 @@ mutable struct PipelineInput
     initialize_parameters::Bool
     merged_xml::String
     warnings::Vector{String}
+    jar_path::String
 
 
     function PipelineInput(name::String,
@@ -205,7 +199,8 @@ mutable struct PipelineInput
                            overwrite::Bool = false,
                            plot_attrs::PlotAttributes = PlotAttributes(),
                            initialize_parameters::Bool = false,
-                           merged_xml::String = ""
+                           merged_xml::String = "",
+                           jar_path::String = joinpath(artifact"beast_jar", "beast.jar")
                            )
         return new(name, directory,
                    data,
@@ -220,6 +215,7 @@ mutable struct PipelineInput
                    plot_attrs,
                    initialize_parameters,
                    merged_xml,
+                   jar_path
                    )
     end
 end
@@ -242,6 +238,10 @@ include("tasks.jl")
 function run_pipeline(input::PipelineInput)
 
     empty!(WARNINGS)
+
+    if haskey(ENV, BEAST_HOME)
+        input.jar_path = find_beast()
+    end
 
     @unpack tasks, julia_seed = input
     Random.seed!(julia_seed)
@@ -358,7 +358,8 @@ function initialize_parameters(input::PipelineInput,
     xml_path = init_xml_path(input)
     mv(filename, xml_path, force = input.overwrite)
 
-    run_beast(xml_path, seed = input.beast_seed, overwrite = input.overwrite)
+    run_beast(xml_path, seed = input.beast_seed, overwrite = input.overwrite,
+              beast_jar = input.jar_path)
     log_filename = log_name(input, stat=INIT)
     log_path = init_log_path(input)
     mv(log_filename, log_path, force = input.overwrite)
@@ -455,7 +456,9 @@ function run_selection_xml(input::PipelineInput)
     for r = 1:model_selection.reps
         for m = 1:length(model_selection)
             xml_path = selection_xml_path(input, model = m, rep = r)
-            RunBeast.run_beast(xml_path, seed = input.beast_seed, overwrite = input.overwrite)
+            RunBeast.run_beast(xml_path, seed = input.beast_seed,
+                               overwrite = input.overwrite,
+                               beast_jar = input.jar_path)
 
             log_filename = log_name(input, model = m, rep = r)
             log_path = selection_log_path(input, model = m, rep = r)
@@ -535,7 +538,9 @@ end
 function run_final_xml(input::PipelineInput)
     xml_paths = final_xml_paths(input)
     for path in xml_paths
-        RunBeast.run_beast(path, seed = input.beast_seed, overwrite = input.overwrite)
+        RunBeast.run_beast(path, seed = input.beast_seed,
+                           overwrite = input.overwrite,
+                           beast_jar = input.jar_path)
     end
 end
 
