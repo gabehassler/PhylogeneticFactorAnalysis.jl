@@ -82,8 +82,9 @@ Here is the simplest xml you can supply
   </modelSelection>
 </phylogeneticFactorAnalysis>
 ```
+The above xml performs a single BEAST run with a 5-factor model and upper-triangular constraint on the loadings.
 
-Here is a more complex xml:
+Here is a more complex xml that can handle discrete traits:
 ```
 <?xml version="1.0" encoding="UTF-8"?>
 <phylogeneticFactorAnalysis name="aquilegiaBinary" partitionSeed="666" mcmcSeed="666" overwrite="true" standardizeTraits="true">
@@ -96,6 +97,7 @@ Here is a more complex xml:
   <mcmcOptions chainLength="100000"/>
 </phylogeneticFactorAnalysis>
 ```
+
 
 ### Explanation of elements and attributes
 Element: `phylogeneticFactorAnalysis`

@@ -8,7 +8,7 @@ makedocs(
 )
 
 deploydocs(
-    repo = "https://github.com/gabehassler/PhylogeneticFactorAnalysis.jl.git",
+    repo = "github.com/gabehassler/PhylogeneticFactorAnalysis.jl.git",
     devbranch = "main"
 )
 
