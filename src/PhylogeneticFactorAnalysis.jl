@@ -28,9 +28,7 @@ include("dependencies.jl")
 include("PostProcessing.jl")
 using PhylogeneticFactorAnalysis.PostProcessing
 
-# const WARNINGS = String[]
 
-import RunBeast.find_beast
 function find_beast()
     if haskey(ENV, BEAST_HOME)
         return RunBeast.find_beast()
@@ -40,7 +38,6 @@ function find_beast()
     end
 end
 
-import RunBeast.check_beast
 function check_beast()
     return RunBeast.check_beast(beast_jar = find_beast())
 end
