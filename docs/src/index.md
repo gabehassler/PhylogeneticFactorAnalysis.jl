@@ -143,7 +143,9 @@ Element: `mcmcOptions`
 
 
 ## Running analyses
-The only function required to run analyses is `pfa`.
+To load the package, type `using PhylogeneticFactorAnalysis` into the Julia REPL.
+
+After loading the package, the only function required to run analyses is `pfa`.
 If `test.xml` is the path to your xml file, simply enter `pfa("test.xml")` into the Julia REPL to run the pipeline.
 
 
