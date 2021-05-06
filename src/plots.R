@@ -21,11 +21,15 @@ half_scale <- function(c1, c2, f, n) {
   return(colors)
 }
 
+x <- 255
+c11 <- 133
+c12 <- 212
+c13 <- 227
+c21 <- 244
+c22 <- 181
+c23 <- 189
 
-
-# load_colors <- custom_color_scale("#0000FF", "#808080", "#FF0000", f1)
-load_colors <- custom_color_scale(RGB(0, 0, 1), RGB(0.5, 0.5, 0.5), RGB(1, 0, 0), f1)
-
+load_colors <- custom_color_scale(sRGB(c11/x, c12/x, c13/x), sRGB(0.75, 0.75, 0.75), sRGB(c21/x, c22/x, c23/x), f1)
 
 
 # colors <- c("#0000FF", "#1515EA", "#2B2BD5", "#4040C0", "#5555AA", "#6B6B95", "#808080", "#956B6B", )
@@ -108,7 +112,7 @@ plot_loadings <- function(csv_path, plot_name, labels_path = NA, height_scale=1.
     geom_vline(xintercept=0, linetype="dashed") +
     geom_point(aes(y=trait, x=L, color=sign_perc), size=1.5) +
     geom_errorbarh(aes(y=trait, xmin=hpdl, xmax=hpdu, color=sign_perc), height=0.0, size=1) +
-    scale_color_gradientn(colors = load_colors, limits=c(0, 1), name="probability > 0") +
+    scale_color_gradientn(colors = load_colors, limits=c(0, 1), name="probability > 0", na.value="grey75") +
     scale_y_discrete(limits=rev) +
     # scale_color_gradient2(low="orange", mid="white", high="purple", limits=c(-1, 1), name="L") +
     #facet_grid(~ cat, scales="free_x", space="free_x") +
