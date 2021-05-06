@@ -33,7 +33,7 @@ install.packages(c("ggplot2", "wesanderson", "colorspace", "tidyr", "ggtree", "p
 ### Add `PhylogeneticFactorAnalysis` to your Julia environment
 From the Julia REPL, run
 ```
-import Pkg; Pkg.add(url="https://github.com/gabehassler/PhylogeneticFactorAnalysis.jl.git")
+import Pkg; Pkg.add("PhylogeneticFactorAnalysis")
 ```
 
 
