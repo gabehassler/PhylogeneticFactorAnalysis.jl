@@ -28,8 +28,22 @@ include("dependencies.jl")
 include("PostProcessing.jl")
 using PhylogeneticFactorAnalysis.PostProcessing
 
-const WARNINGS = String[]
+# const WARNINGS = String[]
 
+import RunBeast.find_beast
+function find_beast()
+    if haskey(ENV, BEAST_HOME)
+        return RunBeast.find_beast()
+    else
+        return RunBeast.find_beast(
+                        beast_home = joinpath(artifact"beast_jar", "beast.jar"))
+    end
+end
+
+import RunBeast.check_beast
+function check_beast()
+    return RunBeast.check_beast(beast_jar = find_beast())
+end
 
 ModelStat = NamedTuple{(:model, :statistics),Tuple{Int64,Array{String,1}}}
 
@@ -202,7 +216,7 @@ mutable struct PipelineInput
                            plot_attrs::PlotAttributes = PlotAttributes(),
                            initialize_parameters::Bool = false,
                            merged_xml::String = "",
-                           jar_path::String = joinpath(artifact"beast_jar", "beast.jar")
+                           jar_path::String = find_beast()
                            )
         return new(name, directory,
                    data,
@@ -217,6 +231,7 @@ mutable struct PipelineInput
                    plot_attrs,
                    initialize_parameters,
                    merged_xml,
+                   [""],
                    jar_path
                    )
     end
@@ -227,6 +242,8 @@ function dimensions(input::PipelineInput, model::Int)
     k = input.model_selection.n_factors[model]
     return (n = n, p = p, k = k)
 end
+
+
 
 include("paths.jl")
 include("make_xml.jl")
@@ -239,11 +256,7 @@ include("tasks.jl")
 
 function run_pipeline(input::PipelineInput)
 
-    empty!(WARNINGS)
-
-    if haskey(ENV, BEAST_HOME)
-        input.jar_path = find_beast()
-    end
+    empty!(input.warnings)
 
     @unpack tasks, julia_seed = input
     Random.seed!(julia_seed)
@@ -299,7 +312,7 @@ function run_pipeline(input::PipelineInput)
         plot_factors(input)
     end
 
-    for warning in WARNINGS
+    for warning in input.warnings
         @warn warning
     end
 
@@ -651,7 +664,7 @@ function compute_selection_statistics(log_path::String, model_selection::ModelSe
                       "has low effective sample size ($ess)."
             @warn warning
 
-            push!(WARNINGS, warning)
+            push!(input.warnings, warning)
         end
 
         means[i] = mean(stat_data)
