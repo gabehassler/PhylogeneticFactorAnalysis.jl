@@ -18,3 +18,5 @@ for (repo in repos) {
    install.packages(repo, repos="https://cloud.r-project.org/")
    print(paste(repo, "installed"))
 }
+
+library(ggtree)
