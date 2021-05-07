@@ -33,7 +33,7 @@ function prep_loadings(input::PipelineInput, log_path::String,
     df = DataFrame()
     types = [String, Int, Float64, Float64, Float64, Float64]
     nms = ["trait", "factor", "L", "perc", "hpdu", "hpdl"]
-    dim = k * perc
+    dim = k * p
 
     for i = 1:length(types)
         df[!, nms[i]] = Vector{types[i]}(undef, dim)
