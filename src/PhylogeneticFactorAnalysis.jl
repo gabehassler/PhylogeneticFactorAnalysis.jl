@@ -8,7 +8,11 @@ using BeastUtils, BeastUtils.DataStorage,
       BeastUtils.MatrixUtils, BeastUtils.RunBeast, BeastUtils.Logs,
       BeastUtils.PosteriorSummary
 using UnPack, Random, DataFrames, CSV
-using Statistics, RCall, EzXML, JLD, LinearAlgebra
+using Statistics
+using EzXML
+using JLD
+using LinearAlgebra
+using RCall
 
 import BeastUtils.DataStorage.TraitData
 import BEASTXMLConstructor.MCMCOptions
