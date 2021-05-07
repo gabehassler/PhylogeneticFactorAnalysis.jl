@@ -11,7 +11,8 @@ makedocs(
 
 deploydocs(
     repo = "github.com/gabehassler/PhylogeneticFactorAnalysis.jl.git",
-    devbranch = "main"
+    devbranch = "main",
+    push_preview=true
 )
 
 # Documenter can also automatically deploy documentation to gh-pages.

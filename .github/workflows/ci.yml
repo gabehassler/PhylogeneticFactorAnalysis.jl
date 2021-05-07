@@ -1,3 +1,4 @@
+
 name: CI
 
 on:
@@ -17,8 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.3.1' # will expand to the latest stable 1.x release of Julia.
-          # - 'nightly'
+          - '1' # will expand to the latest stable 1.x release of Julia.
         os:
           - ubuntu-latest
           # - macos-latest
@@ -28,26 +28,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: r-lib/actions/setup-r@v1
-        # with:
-          # r-version: '4.0'
-      # - name: install R dependencies
-      #   run: |
-      #     install.packages(c("remotes", "ggplot2",
-      #              "wesanderson",
-      #              "colorspace",
-      #              "tidyr",
-      #              "ggtree",
-      #              "phytools",
-      #              "tidytree",
-      #              "aplot",
-      #              "RColorBrewer",
-      #              "ggnewscale",
-      #              "phyclust",
-      #              "treeio"
-      #              ))
-      #     remotes::install_deps(dependencies = TRUE)
-      #   shell: Rscript {0}
-      # - run: Rscript install_r.R
       - uses: julia-actions/setup-julia@v1
         with:
           version: ${{ matrix.version }}
@@ -68,24 +48,24 @@ jobs:
       - uses: codecov/codecov-action@v1
         with:
           file: lcov.info
-  # docs:
-  #   name: Documentation
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - uses: r-lib/actions/setup-r@v1
-  #     - run: echo "LD_LIBRARY_PATH=$(R RHOME)/lib" >> $GITHUB_ENV
-  #     - uses: julia-actions/setup-julia@v1
-  #       with:
-  #         version: '1.3'
-  #     - name: install dependencies
-  #       run: |
-  #         julia --project=docs -e '
-  #           using Pkg
-  #           Pkg.develop(PackageSpec(path=pwd()))
-  #           Pkg.instantiate()'
-  #     - name: make docs
-  #       run: julia --project=docs docs/make.jl
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #         DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: r-lib/actions/setup-r@v1
+      - run: echo "LD_LIBRARY_PATH=$(R RHOME)/lib" >> $GITHUB_ENV
+      - uses: julia-actions/setup-julia@v1
+        with:
+          version: '1'
+      - name: install dependencie
+        run: |
+          julia --project=docs -e '
+            using Pkg
+            Pkg.develop(PackageSpec(path=pwd()))
+            Pkg.instantiate()'
+      - name: make docs
+        run: julia --project=docs docs/make.jl
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
