@@ -4,7 +4,9 @@ using PhylogeneticFactorAnalysis
 makedocs(
     sitename = "PhylogeneticFactorAnalysis",
     format = Documenter.HTML(),
-    modules = [PhylogeneticFactorAnalysis]
+    modules = [PhylogeneticFactorAnalysis],
+    pages = ["Home" => "index.md",
+             "Examples" => "examples.md"]
 )
 
 deploydocs(
