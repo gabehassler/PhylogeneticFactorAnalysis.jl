@@ -30,9 +30,15 @@ function prep_loadings(input::PipelineInput, log_path::String,
 
     n = size(data, 1)
 
-    df = DataFrame([String, Int, Float64, Float64, Float64, Float64],
-                    ["trait", "factor", "L", "perc", "hpdu", "hpdl"],
-                    k * p)
+    df = DataFrame()
+    types = [String, Int, Float64, Float64, Float64, Float64]
+    nms = ["trait", "factor", "L", "perc", "hpdu", "hpdl"]
+    dim = k * perc
+
+    for i = 1:length(types)
+        df[!, nms[i]] = Vector{types[i]}(undef, dim)
+    end
+
 
     row_counts = zeros(Int, k)
 
