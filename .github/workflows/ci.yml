@@ -32,7 +32,7 @@ jobs:
           r-version: '4.0'
       - name: install R dependencies
         run: |
-          install.packages(c("ggplot2",
+          install.packages(c("remotes", "ggplot2",
                    "wesanderson",
                    "colorspace",
                    "tidyr",

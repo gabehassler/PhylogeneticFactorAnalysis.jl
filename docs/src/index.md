@@ -1,6 +1,6 @@
 # PhylogeneticFactorAnalysis.jl Documentation
 
-## Installation
+## Installation Instructions
 
 ### Install Java
 
