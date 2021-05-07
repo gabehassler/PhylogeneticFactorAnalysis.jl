@@ -1,4 +1,5 @@
-install.packages(c("ggplot2",
+repos <- c("remotes",
+                   "ggplot2",
                    "wesanderson",
                    "colorspace",
                    "tidyr",
@@ -9,7 +10,11 @@ install.packages(c("ggplot2",
                    "RColorBrewer",
                    "ggnewscale",
                    "phyclust",
-                   "treeio"
-                   ),
-                repos="https://cloud.r-project.org/",
-                lib="./rlib")
+                   "treeio")
+
+for (repo in repos) {
+   print("======================================================================")
+   print(paste("installing", repo, "..."))
+   install.packages(repo, repos="https://cloud.r-project.org/")
+   print(paste(repo, "installed"))
+}
