@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phylogeneticFactorAnalysis name="pfa_test" partitionSeed="666" mcmcSeed="666" standardizeTraits="true">
+  <data traits="aquilegia_continuous.csv" tree="aquilegia_newick.txt"/>
+  <iidPrior constraint="orthogonal"/>
+  <modelSelection repeats="2" burnin="0.25">
+    <nFactors>1 2</nFactors>
+    <mcmcOptions chainLength="100"/>
+  </modelSelection>
+  <mcmcOptions chainLength="100"/>
+</phylogeneticFactorAnalysis>
+

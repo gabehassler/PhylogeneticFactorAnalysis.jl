@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phylogeneticFactorAnalysis name="aquilegia3" partitionSeed="666" mcmcSeed="666" standardizeTraits="true">
+  <data traits="aquilegia_continuous.csv" tree="aquilegia_newick.txt"/>
+  <orthogonalShrinkagePrior forceDescendingScales="true" scaleSpacing="0.9"/>
+  <modelSelection repeats="5" burnin="0.25">
+    <nFactors>4 4 4 4</nFactors>
+    <shrinkageStrength>3 10 30 100</shrinkageStrength>
+  </modelSelection>
+</phylogeneticFactorAnalysis>
+
