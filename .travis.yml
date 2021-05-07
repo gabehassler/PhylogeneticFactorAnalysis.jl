@@ -50,6 +50,7 @@ before_install:
   - if [ "$TRAVIS_OS_NAME" == "osx" ] && [ "$USE_CONDA" == "false" ]; then sudo installer -pkg R-*.pkg -target /; fi
 
   - java -version
+  - mkdir rlib
   - ls
   - Rscript install_r.R
   # - R_HOME=$(R RHOME)

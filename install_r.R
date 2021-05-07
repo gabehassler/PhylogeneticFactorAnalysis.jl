@@ -11,4 +11,5 @@ install.packages(c("ggplot2",
                    "phyclust",
                    "treeio"
                    ),
-                repos="https://cloud.r-project.org/")
+                repos="https://cloud.r-project.org/",
+                lib="./rlib")
