@@ -6,7 +6,8 @@ makedocs(
     format = Documenter.HTML(),
     modules = [PhylogeneticFactorAnalysis],
     pages = ["Home" => "index.md",
-             "Examples" => "examples.md"]
+             "Examples" => "examples.md",
+             "Partial Analyses" => "partials.md"]
 )
 
 deploydocs(
