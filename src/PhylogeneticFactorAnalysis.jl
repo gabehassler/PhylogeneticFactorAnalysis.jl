@@ -19,7 +19,8 @@ export load_jld,
        run_only,
        check_beast,
        check_r,
-       import_example
+       import_example,
+       run_example
 
 
 const BEAST_HOME = "BEAST_HOME"
