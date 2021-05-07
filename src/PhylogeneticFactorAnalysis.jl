@@ -18,7 +18,8 @@ export load_jld,
        start_from,
        run_only,
        check_beast,
-       check_r
+       check_r,
+       import_example
 
 
 const BEAST_HOME = "BEAST_HOME"
@@ -250,6 +251,7 @@ include("parsers.jl")
 include("ui.jl")
 include("display.jl")
 include("tasks.jl")
+include("examples.jl")
 
 function run_pipeline(input::PipelineInput)
 
@@ -368,13 +370,13 @@ function initialize_parameters(input::PipelineInput,
                                model::Int)
     filename = make_init_xml(input, data, model, standardize = false)
     xml_path = init_xml_path(input)
-    mv(filename, xml_path, force = input.overwrite)
+    mv(filename, xml_path, force = true)
 
-    run_beast(xml_path, seed = input.beast_seed, overwrite = input.overwrite,
+    run_beast(xml_path, seed = input.beast_seed, overwrite = true,
               beast_jar = input.jar_path)
     log_filename = log_name(input, stat=INIT)
     log_path = init_log_path(input)
-    mv(log_filename, log_path, force = input.overwrite)
+    mv(log_filename, log_path, force = true)
 
     cols, data = get_log(log_path)
     L_cols = findall(startswith(L_HEADER), cols)
@@ -505,7 +507,7 @@ function process_selection_statistics(input::PipelineInput, model::Int, rep::Int
     @unpack model_selection = input
 
     log_path = selection_log_path(input, model = model, rep = rep)
-    stats = compute_selection_statistics(log_path, model_selection)
+    stats = compute_selection_statistics(input, log_path, model_selection)
 
     for i = 1:length(stats)
         stat = model_selection.statistics[i]
@@ -633,7 +635,8 @@ function find_best_models(input::PipelineInput)
     return best_models
 end
 
-function compute_selection_statistics(log_path::String, model_selection::ModelSelectionProvider)
+function compute_selection_statistics(input::PipelineInput, log_path::String,
+                                model_selection::ModelSelectionProvider)
     cols, data = Logs.get_log(log_path, burnin = model_selection.burnin)
     n = length(model_selection.statistics)
 
