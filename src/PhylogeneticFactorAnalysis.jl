@@ -3,10 +3,12 @@ module PhylogeneticFactorAnalysis
 using Pkg.Artifacts
 
 
-using BEASTXMLConstructor, BeastUtils, BeastUtils.DataStorage,
+using BEASTXMLConstructor
+using BeastUtils, BeastUtils.DataStorage,
       BeastUtils.MatrixUtils, BeastUtils.RunBeast, BeastUtils.Logs,
-      BeastUtils.PosteriorSummary,
-      UnPack, Random, DataFrames, CSV, Statistics, RCall, EzXML, JLD, LinearAlgebra
+      BeastUtils.PosteriorSummary
+using UnPack, Random, DataFrames, CSV
+using Statistics, RCall, EzXML, JLD, LinearAlgebra
 
 import BeastUtils.DataStorage.TraitData
 import BEASTXMLConstructor.MCMCOptions
