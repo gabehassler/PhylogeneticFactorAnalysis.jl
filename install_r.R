@@ -1,0 +1,14 @@
+install.packages(c("ggplot2",
+                   "wesanderson",
+                   "colorspace",
+                   "tidyr",
+                   "ggtree",
+                   "phytools",
+                   "tidytree",
+                   "aplot",
+                   "RColorBrewer",
+                   "ggnewscale",
+                   "phyclust",
+                   "treeio"
+                   ),
+                repos="https://cloud.r-project.org/")
