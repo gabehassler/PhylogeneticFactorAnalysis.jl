@@ -270,12 +270,12 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
   if (is.na(height)) {
     height <- 20
     if (layout == "rectangular") {
-      height <- 0.1 * n
+      height <- 0.2 * n
     }
   }
 
   if (is.na(width)) {
-    width <- 20
+    width <- 10
   }
   if (layout=="circular") {
     combined_layout = "fan"
