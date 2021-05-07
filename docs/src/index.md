@@ -104,6 +104,7 @@ Element: `phylogeneticFactorAnalysis`
  - This is the root element that encompasses all other elements.
  - Attributes
    - `name`: the name of the folder and files that will be created. This can be set to anything
+   - `directory`: the directory you want to store the results in. You can also put your data files here and the pipeline will find them.
    - `partitionSeed` (optional): the random number seed used for creating the training and test data sets. Can be any positive integer.
    - `mcmcSeed` (optional): the random number seed for the BEAST MCMC simulation
    - `overwrite` (optional): allows you to overwrite any existing folders. Possible values are "true" or "false". __If this is set to "true", it will automatically delete everything in the folder specified by `name`.__
