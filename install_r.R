@@ -19,4 +19,4 @@ for (repo in repos) {
    print(paste(repo, "installed"))
 }
 
-library(ggtree)
+# saveRDS(remotes::dev_package_deps(dependencies = TRUE), ".github/depends.Rds", version = 2)
