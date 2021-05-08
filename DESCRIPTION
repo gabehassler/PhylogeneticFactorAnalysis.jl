@@ -16,14 +16,13 @@ Imports:
     wesanderson,
     colorspace,
     tidyr,
-    ggtree,
     phytools,
     tidytree,
     aplot,
     RColorBrewer,
     ggnewscale,
     phyclust,
-    treeio
+    BiocManager
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
