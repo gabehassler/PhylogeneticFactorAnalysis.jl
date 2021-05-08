@@ -10,13 +10,16 @@ repos <- c("remotes",
                    "RColorBrewer",
                    "ggnewscale",
                    "phyclust",
-                   "treeio")
+                   "treeio",
+                   "BiocManager")
+bio_repos <- c("ggtree", "treeio")
 
 for (repo in repos) {
-   print("======================================================================")
-   print(paste("installing", repo, "..."))
-   install.packages(repo, repos="https://cloud.r-project.org/")
-   print(paste(repo, "installed"))
+   if (!require(repo)) install.packages(repo, repos="https://cloud.r-project.org/")
+}
+
+for (repo in bio_repos) {
+   BiocManager::install(repo)
 }
 
 # saveRDS(remotes::dev_package_deps(dependencies = TRUE), ".github/depends.Rds", version = 2)
