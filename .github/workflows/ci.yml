@@ -45,6 +45,8 @@ jobs:
       - name: Install dependencies
         run: |
           remotes::install_deps(dependencies = TRUE)
+          BiocManager::install("treeio")
+          BiocManager::install("ggtree")
         shell: Rscript {0}
       - run: echo "LD_LIBRARY_PATH=$(R RHOME)/lib" >> $GITHUB_ENV
       # - run: Rscript install_r.R
