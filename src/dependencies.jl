@@ -15,4 +15,5 @@ function check_r()
     """
 
     println("\n\nall necessary R packages installed")
+    return true
 end
