@@ -11,7 +11,7 @@ end
 function parse_pfa(node::EzXML.Node, xml_directory::String)
     @assert node.name == PFA
     julia_seed = attr(node, JULIA_SEED, Int, default=rand(UInt32))
-    directory = attr(node, DIRECTORY, String, default= pwd())
+    directory = abspath(attr(node, DIRECTORY, String, default= pwd()))
     alternative_directories = [directory, xml_directory]
 
     data = parse_data(get_child_by_name(node, DATA),
