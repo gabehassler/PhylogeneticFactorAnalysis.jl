@@ -11,22 +11,46 @@ function prep_loadings(input::PipelineInput, log_path::String,
     @unpack trait_data = data
     @unpack burnin, hpd_alpha, scale_loadings_by_factors = plot_attrs #TODO: just pass plot_attrs?
 
-    cat_dict = Dict{String, String}()
     original_labels = trait_data.trait_names
 
+    # L_header =  LOAD_HEADER
+    # sv_header = SV_HEADER
+    # fac_header = FAC_HEADER
+    prep_loadings(log_path, csv_path,
+                  hpd_alpha = hpd_alpha,
+                  burnin=burnin,
+                  scale_loadings_by_factors = scale_loadings_by_factors,
+                  original_labels = original_labels)
+end
+
+function prep_loadings(log_path::String, csv_path::String;
+                       burnin::Float64 = 0.1,
+                       hpd_alpha::Float64 = 0.05,
+                       L_header::String = LOAD_HEADER,
+                       sv_header::String = SV_HEADER,
+                       fac_header::String = FAC_HEADER,
+                       scale_loadings_by_factors::Bool = true,
+                       original_labels::Vector{<:AbstractString} = String[],
+                       k::Int = -1,
+                       n_traits::Int = -1)
+
+
     cols, data = get_log(log_path, burnin=burnin)
-    L_header =  LOAD_HEADER
-    sv_header = SV_HEADER
-    fac_header = FAC_HEADER
 
     L_inds = findall(x -> startswith(x, L_header), cols)
     sv_inds = findall(x -> startswith(x, sv_header), cols)
     L_cols = cols[L_inds]
     L_data = @view data[:, L_inds]
 
-    k = length(sv_inds)
+    k = k == -1 ? length(sv_inds) : k
+    n_traits = n_traits == -1 ? k : n_traits
+
     p, r = divrem(length(L_cols), k)
     @assert r == 0
+
+    original_labels = isempty(original_labels) ?
+                                    ["trait$i" for i = 1:p] : original_labels
+
 
     n = size(data, 1)
 
@@ -46,13 +70,20 @@ function prep_loadings(input::PipelineInput, log_path::String,
 
     if scale_loadings_by_factors
         fac_inds = findall(startswith(fac_header), cols)
-        n_taxa, r = divrem(length(fac_inds), k)
+
+        n_taxa, r = divrem(length(fac_inds), n_traits)
+        @show length(fac_inds)
+        @show p
         @assert r == 0
-        F_cols = @view cols[fac_inds]
         F_data = @view data[:, fac_inds]
 
+        if k != n_traits
+            @warn "The number of factors does not equal the number of traits. " *
+                  "Assuming indices 1 to $k correspond to the factors."
+        end
+
         for i = 1:n
-            F = reshape(F_data[i, :], k, n_taxa)
+            F = reshape(F_data[i, :], n_traits, n_taxa)[1:k, :]
             stds = std(F, dims=2, corrected=false)
             stdev_adjustments[i, :] .= vec(stds)
         end
@@ -62,7 +93,7 @@ function prep_loadings(input::PipelineInput, log_path::String,
     for i = 1:k
         for j in 1:p
             ind = (i - 1) * p + j
-            @assert L_cols[ind] == "$L_header$i$(j)"
+            @assert L_cols[ind] == "$L_header$i$(j)" || L_cols[ind] == "$L_header.$i.$j"
 
             df.trait[ind] = original_labels[j]
             df.factor[ind] = i
@@ -71,7 +102,7 @@ function prep_loadings(input::PipelineInput, log_path::String,
             μ = mean(vals)
             df.L[ind] = μ
 
-            hpd = hpd_interval(vals)
+            hpd = hpd_interval(vals, alpha = hpd_alpha)
             df.hpdu[ind] = hpd.upper
             df.hpdl[ind] = hpd.lower
 

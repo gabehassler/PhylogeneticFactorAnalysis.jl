@@ -237,6 +237,7 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
                              fan.angle=30.0,
                              new_labels=NA,
                              common_scale=FALSE,
+                             scale=TRUE,
                              extra_offset=0,
                              labels_offset=0.02
 ) {
@@ -252,7 +253,9 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
   x <- apply(as.matrix(x), 2, as.numeric)
   rownames(x) <- taxa
   n <- length(taxa)
-  x <- scale(x)
+  if (scale) {
+    x <- scale(x)
+  }
 
   limits <- NA
   if (common_scale) {
@@ -275,7 +278,7 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
   }
 
   if (is.na(width)) {
-    width <- 10
+    width <- 20
   }
   if (layout=="circular") {
     combined_layout = "fan"
@@ -323,7 +326,7 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
 
     p3 <- p2 + new_scale_fill() + new_scale_color()
     p4 <- my_gheatmap(p3, x, offset=extra_offset + heat_width * 2, width=heat_width * n_factors, colnames_angle=90, colnames_offset_y = 0, legend_title="factor value") +
-      scale_fill_gradient2(midpoint = 0.0, low="blue", mid='grey', high="red") + scale_color_gradient2(midpoint = 0.0, low="blue", mid='grey', high="red") +
+      scale_fill_gradient2(midpoint = 0.0, low="blue", mid='white', high="red") + scale_color_gradient2(midpoint = 0.0, low="blue", mid='white', high="red") +
       labs(fill="factor value") +
       guides(color=FALSE)
 
@@ -438,8 +441,8 @@ my_gheatmap <- function(p, data, offset=0, width=1, low="green", high="red", col
   dd$x <- V2
   dd$width <- width
   dd[[".panel"]] <- factor("Tree")
-  height <- 1.0
-  size <- 0.5
+  height <- 1.00
+  size <- 0.1
   if (is.null(color)) {
     p2 <- p + geom_tile(data=dd, aes(x, y, fill=value, color=value), width=width, height=height, size=size, inherit.aes=FALSE)
   } else {

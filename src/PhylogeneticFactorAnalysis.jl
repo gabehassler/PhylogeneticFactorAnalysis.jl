@@ -26,7 +26,8 @@ export load_jld,
        check_beast,
        check_r,
        import_example,
-       run_example
+       run_example,
+       get_data
 
 
 const BEAST_HOME = "BEAST_HOME"
@@ -248,7 +249,9 @@ function dimensions(input::PipelineInput, model::Int)
     return (n = n, p = p, k = k)
 end
 
-
+function get_data(input::PipelineInput)
+    return input.data.trait_data
+end
 
 include("paths.jl")
 include("make_xml.jl")
