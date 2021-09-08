@@ -1,5 +1,14 @@
 # PhylogeneticFactorAnalysis.jl Documentation
 
+View this repository on GitHub: https://github.com/gabehassler/PhylogeneticFactorAnalysis.jl
+
+If you use this software in published research, please cite:
+
+Hassler, Gabriel W., Brigida Gallone, Leandro Aristide, William L. Allen, Max R. Tolkoff, Andrew J. Holbrook, Guy Baele, Philippe Lemey, and Marc A. Suchard. "Principled, practical, flexible, fast: a new approach to phylogenetic factor analysis." _arXiv preprint arXiv:2107.01246_ (2021).
+
+You can find the paper here: https://arxiv.org/abs/2107.01246
+
+
 ## Installation Instructions
 
 ### Install Java
