@@ -122,7 +122,18 @@ function prep_loadings(log_path::String, csv_path::String;
     return k_effective
 end
 
-function load_plot(plot_name::String, statistics_path::String; labels_path::String = "")
+function load_prep_and_plot(plot_name::String, log_path::String, stats_path::String;
+        labels_path::String = "",
+        width_scale::Float64 = 1.0,
+        kw_args...)
+    prep_loadings(log_path, stats_path; kw_args...)
+    load_plot(plot_name, stats_path, labels_path = labels_path, width_scale = width_scale)
+end
+
+
+function load_plot(plot_name::String, statistics_path::String;
+        labels_path::String = "",
+        width_scale::Float64 = 1.0)
     @rput statistics_path
     @rput plot_name
 
@@ -135,9 +146,11 @@ function load_plot(plot_name::String, statistics_path::String; labels_path::Stri
     @rput plots_path
     labels_array = [labels_path] # can't @rput missing directly
     @rput labels_array
+    @rput width_scale
     R"""
     source(plots_path)
-    plot_loadings(statistics_path, plot_name, labels_path = labels_array[[1]])
+    plot_loadings(statistics_path, plot_name, labels_path = labels_array[[1]],
+        width_scale = width_scale)
     """
 end
 
