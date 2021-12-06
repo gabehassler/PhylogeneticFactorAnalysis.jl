@@ -262,6 +262,7 @@ include("ui.jl")
 include("display.jl")
 include("tasks.jl")
 include("examples.jl")
+include("logs.jl")
 
 function run_pipeline(input::PipelineInput)
 
