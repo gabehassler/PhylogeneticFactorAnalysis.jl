@@ -3,6 +3,8 @@ function pfa(input_file::String)
         input = parse_xml(input_file)
     elseif endswith(input_file, ".jld")
         input = load_jld(input_file)
+    elseif startswith(input_file, "<?xml")
+        input = parse_xml(input_file, is_string = true)
     else
         error("Unknown file extension. Must be either an 'xml' file or 'jld' file.")
     end

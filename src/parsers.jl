@@ -1,6 +1,7 @@
-function parse_xml(xml_path::String)
+function parse_xml(xml_path::String; is_string::Bool = false)
     dir = dirname(xml_path)
-    return parse_xml(readxml(xml_path), dir)
+    xml = is_string ? parsexml(xml_path) : readxml(xml_path)
+    return parse_xml(xml, dir)
 end
 
 function parse_xml(xml::EzXML.Document, xml_directory::String)
