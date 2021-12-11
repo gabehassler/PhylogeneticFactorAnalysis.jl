@@ -23,7 +23,7 @@ function prep_loadings(input::PipelineInput, log_path::String,
                   original_labels = original_labels)
 end
 
-function prep_loadings(log_path::String, csv_path::String;
+function prep_loadings(log_path::BeastLog, csv_path::String;
                        burnin::Float64 = 0.1,
                        hpd_alpha::Float64 = 0.05,
                        L_header::String = LOAD_HEADER,
@@ -32,7 +32,8 @@ function prep_loadings(log_path::String, csv_path::String;
                        scale_loadings_by_factors::Bool = true,
                        original_labels::Vector{<:AbstractString} = String[],
                        k::Int = -1,
-                       n_traits::Int = -1)
+                       n_traits::Int = -1,
+                       offset::Int = 0)
 
 
     cols, data = get_log(log_path, burnin=burnin)
@@ -70,16 +71,21 @@ function prep_loadings(log_path::String, csv_path::String;
 
     if scale_loadings_by_factors
         fac_inds = findall(startswith(fac_header), cols)
+        if length(fac_inds) == 0
+            error("Cannot find any logged factor values. " *
+                "Consider adding a 'fac_header' keywork argument.")
+        end
 
         n_taxa, r = divrem(length(fac_inds), n_traits)
-        @show length(fac_inds)
-        @show p
+
         @assert r == 0
         F_data = @view data[:, fac_inds]
 
         if k != n_traits
             @warn "The number of factors does not equal the number of traits. " *
-                  "Assuming indices 1 to $k correspond to the factors."
+                  "Assuming indices $(offset + 1) to $(offset + k) " *
+                  "correspond to the factors. " *
+                  "Add an 'offset' keywork argument to change this behavior."
         end
 
         for i = 1:n
@@ -99,6 +105,7 @@ function prep_loadings(log_path::String, csv_path::String;
             df.factor[ind] = i
 
             vals = @view(L_data[:, ind]) .* @view(stdev_adjustments[:, i])
+
             μ = mean(vals)
             df.L[ind] = μ
 
@@ -122,7 +129,7 @@ function prep_loadings(log_path::String, csv_path::String;
     return k_effective
 end
 
-function load_prep_and_plot(plot_name::String, log_path::String, stats_path::String;
+function load_prep_and_plot(plot_name::String, log_path::BeastLog, stats_path::String;
         labels_path::String = "",
         width_scale::Float64 = 1.0,
         kw_args...)
@@ -154,10 +161,16 @@ function load_plot(plot_name::String, statistics_path::String;
     """
 end
 
-function prep_factors(svd_path::String, out_path::String)
-    cols, data = get_log(svd_path)
-    k = length(findall(x -> startswith(x, SV_HEADER), cols))
-    fac_inds = findall(x -> startswith(x, FAC_HEADER), cols)
+function prep_factors(svd_path::BeastLog, out_path::String;
+                      fac_header::String = FAC_HEADER,
+                      sv_header::String = SV_HEADER,
+                      k::Int = -1,
+                      burnin::Float64 = 0.1)
+    cols, data = get_log(svd_path, burnin = burnin)
+    if k == -1
+        k = length(findall(x -> startswith(x, sv_header), cols))
+    end
+    fac_inds = findall(x -> startswith(x, fac_header), cols)
     fac_cols = cols[fac_inds]
     fac_means = vec(mean(data[:, fac_inds], dims = 1))
     nk = length(fac_cols)
@@ -168,13 +181,15 @@ function prep_factors(svd_path::String, out_path::String)
     taxa = Vector{String}(undef, n)
 
     ind = 1
+    f = length(fac_header) + 1
     for i = 1:n
-        s = split(fac_cols[ind], '.')
-        taxon = join(s[2:(end - 1)], '.')
+        s = split(fac_cols[ind][f:end], '.')
+        taxon = join(s[1:(end - 1)], '.')
+
         taxa[i] = taxon
         for j = 1:k
-            s = split(fac_cols[ind], '.')
-            @assert join(s[2:(end - 1)], '.') == taxon
+            s = split(fac_cols[ind][f:end], '.')
+            @assert join(s[1:(end - 1)], '.') == taxon
             @assert s[end] == "$j"
             F[i, j] = fac_means[ind]
             ind += 1
@@ -192,7 +207,12 @@ function prep_factors(svd_path::String, out_path::String)
 end
 
 function factor_plot(plot_path::String, stats_path::String, tree_path::String,
-                     class_path::String)
+                     class_path::String;
+                     fac_names::Vector{String} = String[],
+                     layout::String = "rectangular",
+                     tip_labels::Bool = true,
+                     line_width::Float64 = 1.0
+                     )
     @rput plot_path
     @rput stats_path
     @rput tree_path
@@ -203,8 +223,42 @@ function factor_plot(plot_path::String, stats_path::String, tree_path::String,
     end
     class_array = [class_path]
     @rput class_array
+
+    fac_names = isempty(fac_names) ? [missing] : fac_names
+    @rput fac_names
+
+    @rput layout
+    @rput tip_labels
+    @rput line_width
+
     R"""
     source(R_PLOT_SCRIPT)
-    plot_factor_tree(plot_path, tree_path, stats_path, class_path=class_array[[1]])
+
+    if (is.na(fac_names[1])) {
+        fac_names <- NA
+    }
+    plot_factor_tree(plot_path, tree_path, stats_path, class_path=class_array[[1]],
+                     fac_names = fac_names, layout = layout,
+                     tip_labels = tip_labels, line_width = line_width)
     """
 end
+
+function factor_prep_and_plot(plot_path::String, log_path::BeastLog,
+                              stats_path::String, tree_path::String;
+                              class_path::String = "",
+                              check_stats::Bool = false,
+                              fac_names::Vector{String} = String[],
+                              layout::String = "rectangular",
+                              tip_labels::Bool = true,
+                              line_width::Float64 = 1.0,
+                              kwargs...)
+    if !(check_stats && isfile(stats_path))
+        prep_factors(log_path, stats_path; kwargs...)
+    end
+
+    factor_plot(plot_path, stats_path, tree_path, class_path,
+                layout = layout, fac_names = fac_names,
+                tip_labels = tip_labels,
+                line_width = line_width)
+end
+
