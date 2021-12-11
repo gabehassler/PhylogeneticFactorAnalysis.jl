@@ -36,7 +36,7 @@ load_colors <- custom_color_scale(sRGB(c11/x, c12/x, c13/x), sRGB(0.75, 0.75, 0.
 
 ## Loadings plot
 
-plot_loadings <- function(csv_path, plot_name, labels_path = NA, height_scale=1.0){
+plot_loadings <- function(csv_path, plot_name, labels_path = NA, height_scale=1.0, width_scale=1.0){
   df  <- read.csv(csv_path, header=TRUE, encoding="UTF-8")
 
   if (!is.na(labels_path)) {
@@ -142,7 +142,7 @@ plot_loadings <- function(csv_path, plot_name, labels_path = NA, height_scale=1.
 
   # axis.title.y = element_text())
   n_traits <- length(trait_levs)
-  ggsave(plot_name, width=k * 2 + 2, height= height_scale * (n_traits * 0.15 + 1), units="in", limitsize=FALSE)
+  ggsave(plot_name, width=width_scale * (k * 2 + 2), height= height_scale * (n_traits * 0.15 + 1), units="in", limitsize=FALSE)
   gc()
 }
 
@@ -239,7 +239,8 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
                              common_scale=FALSE,
                              scale=TRUE,
                              extra_offset=0,
-                             labels_offset=0.02
+                             labels_offset=0.02,
+                             fac_names=NA
 ) {
 
   x <- as.matrix(read.csv(factors_path, header=TRUE))
@@ -304,10 +305,14 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
   }
 
   n_factors = length(factors)
-  fac_names <- character(n_factors)
-  for (i in 1:n_factors) {
-    fac_names[i] = paste("factor", i)
+
+  if (is.na(fac_names)) {
+    fac_names <- character(n_factors)
+    for (i in 1:n_factors) {
+      fac_names[i] = paste("factor", i)
+    }
   }
+
   colnames(x) <- fac_names
   base_tree <- read.tree(tree_path)
   max_height <- max(node.depth.edgelength(base_tree))
