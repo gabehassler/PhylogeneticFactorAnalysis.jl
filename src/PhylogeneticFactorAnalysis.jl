@@ -89,10 +89,6 @@ function size(m::ModelSelectionProvider)
     return (length(m.n_factors), m.reps)
 end
 
-struct GeneralModelingDecisions
-    standardize_data::Bool
-end
-
 abstract type PriorParameters end
 
 struct IIDPrior <: PriorParameters
@@ -184,6 +180,20 @@ struct TraitsAndTree
     end
 end
 
+mutable struct ModelOptions # miscellaneous modeling options
+    root_sample_size::Float64
+    standardize_data::Bool
+
+end
+
+function ModelOptions(;
+                      root_sample_size::Float64 = 1e-3,
+                      standardize_data::Bool = false
+                      )
+    return ModelOptions(root_sample_size,
+                        standardize_data)
+end
+
 
 mutable struct PipelineInput
     name::String
@@ -193,10 +203,10 @@ mutable struct PipelineInput
 
     model_selection::ModelSelectionProvider
     prior::PriorParameters
+    model_options::ModelOptions
     tasks::PipelineTasks
 
     final_mcmc::MCMCOptions
-    standardize_data::Bool
     julia_seed::Int
     beast_seed::Int
 
@@ -212,9 +222,9 @@ mutable struct PipelineInput
                            data::TraitsAndTree,
                            model_selection::ModelSelectionProvider,
                            prior::PriorParameters;
+                           model_options = ModelOptions(),
                            tasks::PipelineTasks = PipelineTasks(),
                            final_mcmc::MCMCOptions = MCMCOptions(chain_length = 100_000),
-                           standardize_data::Bool = true,
                            julia_seed::Int = Int(rand(UInt32)),
                            beast_seed::Int = -1,
                            directory = pwd(),
@@ -228,9 +238,9 @@ mutable struct PipelineInput
                    data,
                    model_selection,
                    prior,
+                   model_options,
                    tasks,
                    final_mcmc,
-                   standardize_data,
                    julia_seed,
                    beast_seed,
                    overwrite,
@@ -432,13 +442,13 @@ function standardize_continuous!(X::Matrix{Float64}, discrete_inds::Vector{Int})
 end
 
 function make_selection_xml(input::PipelineInput)
-    @unpack model_selection, data, name, prior = input
+    @unpack model_selection, data, name, prior, model_options = input
     @unpack trait_data, newick, discrete_inds = data
     @unpack reps = model_selection
     @unpack data = trait_data
 
     validation_data = copy(trait_data.data)
-    if input.standardize_data
+    if model_options.standardize_data
         standardize_continuous!(validation_data, discrete_inds)
     end
 

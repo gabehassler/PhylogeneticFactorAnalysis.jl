@@ -22,6 +22,8 @@ function parse_pfa(node::EzXML.Node, xml_directory::String)
     nm = attr(node, NAME, String, default = default_name)
 
     standardize = attr(node, STANDARDIZE, Bool, default=false)
+    model_options = ModelOptions(standardize_data = standardize)
+
     overwrite = attr(node, OVERWRITE, Bool, default=false)
 
     prior_node = find_prior(node)
@@ -60,11 +62,11 @@ function parse_pfa(node::EzXML.Node, xml_directory::String)
 
 
     return PipelineInput(nm, data, model_selection, prior,
+                         model_options = model_options,
                          tasks = tasks,
                          julia_seed = julia_seed,
                          directory = directory,
                          plot_attrs = plots,
-                         standardize_data = standardize,
                          overwrite = overwrite,
                          final_mcmc = final_mcmc,
                          initialize_parameters = initialize_parameters,

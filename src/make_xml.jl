@@ -30,14 +30,23 @@ const LOADINGS_WEIGHT = 3.0
 ModelParams = NamedTuple{(:L, :precs),Tuple{Matrix{Float64},Vector{Float64}}}
 
 
-function set_common_options(bx::BEASTXMLElement, options::MCMCOptions; standardize::Bool = true)
+function set_common_options(bx::BEASTXMLElement, mcmc_options::MCMCOptions, model_options::ModelOptions; standardize::Bool = true)
+    # standardize_data from model_options isn't relevant here because even
+    # if model_options.standardize_data == true, the data may have already been
+    # standardized and it may be inappropriate to do so again in the xml.
+    # this might occur when some data are discrete and standardization disrupts
+    # the discrete-trait setup.
 
-    set_options!(bx, options)
+
+    set_options!(bx, mcmc_options)
     lgo = BEASTXMLConstructor.get_loadings_op(bx, component="matrix")
     lgo.weight = LOADINGS_WEIGHT
 
     facs = BEASTXMLConstructor.get_integratedFactorModel(bx)
     facs.standardize_traits = standardize
+
+    tl = BEASTXMLConstructor.get_traitLikelihood(bx)
+    tl.pss = model_options.root_sample_size
 end
 
 function set_parameters(bx::BEASTXMLElement, params::ModelParams)
@@ -48,11 +57,11 @@ end
 
 function make_final_xml(input::PipelineInput, model::Int; statistic::String = "")
 
-    @unpack data, model_selection, prior, final_mcmc = input
+    @unpack data, model_selection, prior, final_mcmc, model_options = input
     @unpack trait_data, newick, discrete_inds = data
     @unpack data, taxa = trait_data
 
-    standardize_data = input.standardize_data
+    standardize_data = model_options.standardize_data
     if length(discrete_inds) > 0 && standardize_data
         standardize_data = false
         standardize_continuous!(data, discrete_inds)
@@ -67,7 +76,7 @@ function make_final_xml(input::PipelineInput, model::Int; statistic::String = ""
 
 
     bx = make_initial_xml(data, taxa, newick, model_selection, prior, model, log_factors = true)
-    set_common_options(bx, final_mcmc, standardize = standardize_data)
+    set_common_options(bx, final_mcmc, model_options, standardize = standardize_data)
     set_parameters(bx, params)
     add_factor_proportion(bx)
 
@@ -89,12 +98,12 @@ function make_training_xml(input::PipelineInput, training_data::Matrix{Float64},
                            model::Int, rep::Int, parameters::ModelParams;
                            standardize::Bool = true)
 
-    @unpack name, data, model_selection, prior = input
+    @unpack name, data, model_selection, prior, model_options = input
     @unpack trait_data, newick, discrete_inds = data
     @unpack mcmc_options = model_selection
     bx = make_initial_xml(training_data, trait_data.taxa, newick, model_selection, prior, model, log_factors = false)
 
-    set_common_options(bx, mcmc_options, standardize = standardize)
+    set_common_options(bx, mcmc_options, model_options, standardize = standardize)
     set_parameters(bx, parameters)
 
     add_validation(bx, validation_data, model_selection.statistics)
@@ -106,6 +115,10 @@ function make_training_xml(input::PipelineInput, training_data::Matrix{Float64},
     return filename
 end
 
+
+# function that makes a small xml to initialize parameters for larger analyses.
+# Typically used to start orthogonally constrained loadings from an area of
+# high-posterior density as this method can be slow.
 function make_init_xml(input::PipelineInput, data::Matrix{Float64}, model::Int; standardize::Bool = false)
     @unpack model_selection = input
     @unpack trait_data, newick, discrete_inds = input.data
