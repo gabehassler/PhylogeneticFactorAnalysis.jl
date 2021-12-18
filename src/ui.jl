@@ -18,17 +18,17 @@ function pfa(input_file::String)
     end
 end
 
-function pfa(name::String;
-                   data_path::String,
-                   newick_path::String,
-                   partition_seed::Int = -1,
-                   mcmc_seed::Int = -1,
-                   overwrite::Bool = true,
-                   standardize_traits::Bool = false,
-                   loadings_prior::String = "iid",
-                   loadings_constraint::String = "orthogonal",
-                   factors::Vector{Int} = [2],
-                   discrete_indices = Int[])
+function pfa(;name::String,
+            data_path::String,
+            newick_path::String,
+            partition_seed::Int = -1,
+            mcmc_seed::Int = -1,
+            overwrite::Bool = true,
+            standardize_traits::Bool = false,
+            loadings_prior::String = "iid",
+            loadings_constraint::String = "orthogonal",
+            factors::Vector{Int} = [2],
+            discrete_indices = Int[])
     data = TraitsAndTree(data_path, newick_path, discrete_inds = discrete_indices)
     model_options = ModelOptions(standardize_data = standardize_traits)
     if loadings_prior == "iid"
