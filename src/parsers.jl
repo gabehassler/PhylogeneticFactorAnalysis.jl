@@ -12,6 +12,8 @@ end
 function parse_pfa(node::EzXML.Node, xml_directory::String)
     @assert node.name == PFA
     julia_seed = attr(node, JULIA_SEED, Int, default=rand(UInt32))
+    beast_seed = attr(node, BEAST_SEED, Int, default=rand(UInt32))
+
     directory = abspath(attr(node, DIRECTORY, String, default= pwd()))
     alternative_directories = [directory, xml_directory]
 
@@ -65,6 +67,7 @@ function parse_pfa(node::EzXML.Node, xml_directory::String)
                          model_options = model_options,
                          tasks = tasks,
                          julia_seed = julia_seed,
+                         beast_seed = beast_seed,
                          directory = directory,
                          plot_attrs = plots,
                          overwrite = overwrite,
