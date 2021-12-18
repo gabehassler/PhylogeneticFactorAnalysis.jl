@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phylogeneticFactorAnalysis name="aquilegia1" partitionSeed="666" mcmcSeed="666" standardizeTraits="true">
+<phylogeneticFactorAnalysis name="pfa_example_1_output" partitionSeed="666" mcmcSeed="666" standardizeTraits="true">
   <data traits="aquilegia_continuous.csv" tree="aquilegia_newick.txt"/>
   <iidPrior constraint="orthogonal"/>
   <modelSelection repeats="5" burnin="0.25">

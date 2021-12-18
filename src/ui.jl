@@ -1,4 +1,4 @@
-function pfa(input_file::String)
+function pfa(input_file::String; override_chainlength::Int = -1)
     if endswith(input_file, ".xml")
         input = parse_xml(input_file)
     elseif endswith(input_file, ".jld")
@@ -9,12 +9,19 @@ function pfa(input_file::String)
         error("Unknown file extension. Must be either an 'xml' file or 'jld' file.")
     end
 
+    if override_chainlength > 0
+        new_mcmc = MCMCOptions(chain_length = override_chainlength)
+        input.final_mcmc = new_mcmc
+        input.model_selection.mcmc_options = new_mcmc
+    end
+
     old_wd = pwd()
     try
         run_pipeline(input)
     catch e
         cd(old_wd)
         @error "Something went wrong" exception=(e, catch_backtrace())
+        error("An error occured, terminating. See stacktrace above for error details.")
     end
 end
 

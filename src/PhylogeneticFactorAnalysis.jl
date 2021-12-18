@@ -53,7 +53,7 @@ end
 
 ModelStat = NamedTuple{(:model, :statistics),Tuple{Int64,Array{String,1}}}
 
-struct ModelSelectionProvider
+mutable struct ModelSelectionProvider
     n_factors::Vector{Int}
     shrinkage_mults::Vector{Float64} # only relevant if using shrinkage prior
     reps::Int

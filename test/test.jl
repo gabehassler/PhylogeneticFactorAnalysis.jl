@@ -1,18 +1,30 @@
 using PhylogeneticFactorAnalysis, Test
 
 
-example_dir = "pfa_example_0"
-test_dir = "pfa_test"
 
 check_beast()
 @test check_r()
 
+
+cl = 100
+examples = 1:4
+for example in examples
+    input_dir = "pfa_example_$(example)"
+    output_dir = input_dir * "_output"
+    @assert !isdir(output_dir)
+    @assert !isdir(input_dir)
+    run_example(example, override_chainlength = cl)
+    @test isdir(input_dir)
+    @test isdir(output_dir)
+    rm(output_dir, recursive = true)
+    rm(input_dir, recursive = true)
+end
+
 run_example(0)
+input_dir = "pfa_example_0"
+output_dir = input_dir * "_output"
 
-@test isdir(example_dir)
-@test isdir(test_dir)
-
-input = parse_xml(joinpath(example_dir, "example_0.xml"))
+input = parse_xml(joinpath(input_dir, "example_0.xml"))
 input.overwrite = true
 
 start_from("plots", input)
@@ -32,3 +44,11 @@ run_pipeline(input)
 
 display(input)
 display(tasks)
+
+log_path = joinpath(output_dir, output_dir * "_processed.log")
+PhylogeneticFactorAnalysis.process_log(log_path)
+
+@test isdir(input_dir)
+@test isdir(output_dir)
+rm(output_dir, recursive = true)
+rm(input_dir, recursive = true)

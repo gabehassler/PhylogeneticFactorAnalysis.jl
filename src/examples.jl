@@ -29,7 +29,8 @@ function import_example(n::Int; dir::String = pwd(), force::Bool = false)
     return new_dir
 end
 
-function run_example(n::Int; args...)
+function run_example(n::Int; override_chainlength::Int = -1, args...)
     example_dir = import_example(n; args...)
-    pfa(joinpath(example_dir, "example_$n.xml"))
+    pfa(joinpath(example_dir, "example_$n.xml"),
+        override_chainlength = override_chainlength)
 end
