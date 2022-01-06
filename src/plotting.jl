@@ -137,6 +137,14 @@ function load_prep_and_plot(plot_name::String, log_path::BeastLog, stats_path::S
     load_plot(plot_name, stats_path, labels_path = labels_path, width_scale = width_scale)
 end
 
+function load_plot(plot_name::String, statistics::DataFrame; kwargs...)
+    tmp_path = "tmp.csv"
+    @assert !isfile(tmp_path)
+    CSV.write(tmp_path, statistics)
+    load_plot(plot_name, tmp_path; kwargs...)
+    rm(tmp_path)
+end
+
 
 function load_plot(plot_name::String, statistics_path::String;
         labels_path::String = "",
