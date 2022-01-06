@@ -7,6 +7,10 @@ f1 <- function(x) {
   return(x^2.5)
 }
 
+f2 <- function(x) {
+  return(x^0.25)
+}
+
 custom_color_scale <- function(low, mid, high, f, n = 10) {
   lows = rev(half_scale(mid, low, f, n))
   highs = half_scale(mid, high, f, n)
@@ -30,6 +34,7 @@ c22 <- 181
 c23 <- 189
 
 load_colors <- custom_color_scale(sRGB(c11/x, c12/x, c13/x), sRGB(0.75, 0.75, 0.75), sRGB(c21/x, c22/x, c23/x), f1)
+fac_colors <- custom_color_scale(sRGB(1, 0, 0), sRGB(1, 1, 1), sRGB(0, 0, 1), f2)
 
 
 # colors <- c("#0000FF", "#1515EA", "#2B2BD5", "#4040C0", "#5555AA", "#6B6B95", "#808080", "#956B6B", )
@@ -240,7 +245,9 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
                              scale=TRUE,
                              extra_offset=0,
                              labels_offset=0.02,
-                             fac_names=NA
+                             fac_names=NA,
+                             factor_fill = scale_fill_gradient2(midpoint = 0.0, low="blue", mid='white', high="red"),
+                             factor_color = scale_color_gradient2(midpoint = 0.0, low="blue", mid='white', high="red")
 ) {
 
   x <- as.matrix(read.csv(factors_path, header=TRUE))
@@ -331,7 +338,7 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
 
     p3 <- p2 + new_scale_fill() + new_scale_color()
     p4 <- my_gheatmap(p3, x, offset=extra_offset + heat_width * 2, width=heat_width * n_factors, colnames_angle=90, colnames_offset_y = 0, legend_title="factor value") +
-      scale_fill_gradient2(midpoint = 0.0, low="blue", mid='white', high="red") + scale_color_gradient2(midpoint = 0.0, low="blue", mid='white', high="red") +
+      factor_fill + factor_color +
       labs(fill="factor value") +
       guides(color=FALSE)
 
