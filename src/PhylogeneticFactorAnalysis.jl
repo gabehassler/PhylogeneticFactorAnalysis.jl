@@ -483,6 +483,26 @@ function make_selection_xml(input::PipelineInput)
     end
 end
 
+function run_selection_xml(input::PipelineInput, rep::Int, model::Int)
+    xml_path = selection_xml_path(input, model = model, rep = rep)
+    RunBeast.run_beast(xml_path, seed = input.beast_seed,
+                        overwrite = input.overwrite,
+                        beast_jar = input.jar_path)
+
+    log_filename = log_name(input, model = model, rep = rep)
+    log_path = selection_log_path(input, model = model, rep = rep)
+    mv(log_filename, log_path, force = input.overwrite)
+
+    timer_filename = timer_name(input, model = model, rep = rep)
+    tp = timer_path(input, model = model, rep = rep)
+    mv(timer_filename, tp, force = input.overwrite)
+
+    if input.tasks.record_selection_stats
+        process_selection_statistics(input, m, r)
+    end
+end
+
+
 function run_selection_xml(input::PipelineInput)
     @unpack model_selection = input
 
@@ -490,22 +510,7 @@ function run_selection_xml(input::PipelineInput)
 
     for r = 1:model_selection.reps
         for m = 1:length(model_selection)
-            xml_path = selection_xml_path(input, model = m, rep = r)
-            RunBeast.run_beast(xml_path, seed = input.beast_seed,
-                               overwrite = input.overwrite,
-                               beast_jar = input.jar_path)
-
-            log_filename = log_name(input, model = m, rep = r)
-            log_path = selection_log_path(input, model = m, rep = r)
-            mv(log_filename, log_path, force = input.overwrite)
-
-            timer_filename = timer_name(input, model = m, rep = r)
-            tp = timer_path(input, model = m, rep = r)
-            mv(timer_filename, tp, force = input.overwrite)
-
-            if input.tasks.record_selection_stats
-                process_selection_statistics(input, m, r)
-            end
+            run_selection_xml(input, r, m)
         end
     end
 end
