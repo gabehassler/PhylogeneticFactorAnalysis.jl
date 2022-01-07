@@ -483,7 +483,7 @@ function make_selection_xml(input::PipelineInput)
     end
 end
 
-function run_selection_xml(input::PipelineInput, rep::Int, model::Int)
+function run_selection_xml(input::PipelineInput, rep::Int, model::Int, lk::ReentrantLock)
     xml_path = selection_xml_path(input, model = model, rep = rep)
     RunBeast.run_beast(xml_path, seed = input.beast_seed,
                         overwrite = input.overwrite,
@@ -498,7 +498,7 @@ function run_selection_xml(input::PipelineInput, rep::Int, model::Int)
     mv(timer_filename, tp, force = input.overwrite)
 
     if input.tasks.record_selection_stats
-        process_selection_statistics(input, model, rep)
+        process_selection_statistics(input, model, rep, lk = lk)
     end
 end
 
@@ -507,10 +507,11 @@ function run_selection_xml(input::PipelineInput)
     @unpack model_selection = input
 
     check_stats_exist(input)
+    stats_lock = ReentrantLock()
 
-    for r = 1:model_selection.reps
+    @sync for r = 1:model_selection.reps
         for m = 1:length(model_selection)
-            run_selection_xml(input, r, m)
+            Threads.@spawn run_selection_xml(input, r, m, stats_lock)
         end
     end
 end
@@ -529,7 +530,9 @@ function check_stats_exist(input::PipelineInput)
     end
 end
 
-function process_selection_statistics(input::PipelineInput, model::Int, rep::Int)
+function process_selection_statistics(input::PipelineInput, model::Int,
+                                      rep::Int;
+                                      lk::ReentrantLock = ReentrantLock())
     @unpack model_selection = input
 
     log_path = selection_log_path(input, model = model, rep = rep)
@@ -538,9 +541,17 @@ function process_selection_statistics(input::PipelineInput, model::Int, rep::Int
     for i = 1:length(stats)
         stat = model_selection.statistics[i]
         stat_path = get_stat_path(input, stat)
-        df = CSV.read(stat_path, DataFrame)
-        df[model, rep] = stats[i]
-        CSV.write(stat_path, df)
+        begin
+            lock(lk)
+            try
+                df = CSV.read(stat_path, DataFrame)
+                df[model, rep] = stats[i]
+                CSV.write(stat_path, df)
+            finally
+                unlock(lk)
+            end
+        end
+
     end
 end
 
