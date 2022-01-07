@@ -53,6 +53,15 @@ end
 
 ModelStat = NamedTuple{(:model, :statistics),Tuple{Int64,Array{String,1}}}
 
+mutable struct Bookkeeper
+    started::Int
+    completed::Int
+    total::Int
+    function Bookkeeper(n::Int)
+        return new(0, 0, n)
+    end
+end
+
 mutable struct ModelSelectionProvider
     n_factors::Vector{Int}
     shrinkage_mults::Vector{Float64} # only relevant if using shrinkage prior
@@ -483,16 +492,37 @@ function make_selection_xml(input::PipelineInput)
     end
 end
 
-function run_selection_xml(input::PipelineInput, rep::Int, model::Int, lk::ReentrantLock)
-    @show Threads.threadid()
+function run_selection_xml(input::PipelineInput, rep::Int, model::Int,
+                           lk::ReentrantLock, bookkeeper::Bookkeeper)
     xml_path = selection_xml_path(input, model = model, rep = rep)
-    # capture_output = Threads.nthreads() > 1
-    capture_output = true; @warn "fix this"
+
+    begin
+        lock(lk)
+        try
+            bookkeeper.started += 1
+            println("starting $(basename(xml_path)) ($(bookkeeper.started)" *
+                " of $(bookkeeper.total) started)")
+        finally
+            unlock(lk)
+        end
+    end
+
 
     RunBeast.run_beast(xml_path, seed = input.beast_seed,
                         overwrite = input.overwrite,
                         beast_jar = input.jar_path,
-                        capture_output = capture_output)
+                        capture_output = true)
+
+    begin
+        lock(lk)
+        try
+            bookkeeper.completed += 1
+            println("completed $(basename(xml_path)) " *
+                "($(bookkeeper.completed) of $(bookkeeper.total) completed)")
+        finally
+            unlock(lk)
+        end
+    end
 
     log_filename = log_name(input, model = model, rep = rep)
     log_path = selection_log_path(input, model = model, rep = rep)
@@ -513,10 +543,14 @@ function run_selection_xml(input::PipelineInput)
 
     check_stats_exist(input)
     stats_lock = ReentrantLock()
+    total_xml = model_selection.reps * length(model_selection)
+    bookkeeper = Bookkeeper(total_xml)
+
 
     Threads.@threads for r = 1:model_selection.reps
         @sync for m = 1:length(model_selection)
-            Threads.@spawn run_selection_xml(input, r, m, stats_lock)
+            Threads.@spawn run_selection_xml(input, r, m, stats_lock,
+                                             bookkeeper)
         end
     end
 end
