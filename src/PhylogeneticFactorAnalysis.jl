@@ -484,10 +484,15 @@ function make_selection_xml(input::PipelineInput)
 end
 
 function run_selection_xml(input::PipelineInput, rep::Int, model::Int, lk::ReentrantLock)
+    @show Threads.threadid()
     xml_path = selection_xml_path(input, model = model, rep = rep)
+    # capture_output = Threads.nthreads() > 1
+    capture_output = true; @warn "fix this"
+
     RunBeast.run_beast(xml_path, seed = input.beast_seed,
                         overwrite = input.overwrite,
-                        beast_jar = input.jar_path)
+                        beast_jar = input.jar_path,
+                        capture_output = capture_output)
 
     log_filename = log_name(input, model = model, rep = rep)
     log_path = selection_log_path(input, model = model, rep = rep)
@@ -509,8 +514,8 @@ function run_selection_xml(input::PipelineInput)
     check_stats_exist(input)
     stats_lock = ReentrantLock()
 
-    @sync for r = 1:model_selection.reps
-        for m = 1:length(model_selection)
+    Threads.@threads for r = 1:model_selection.reps
+        @sync for m = 1:length(model_selection)
             Threads.@spawn run_selection_xml(input, r, m, stats_lock)
         end
     end
