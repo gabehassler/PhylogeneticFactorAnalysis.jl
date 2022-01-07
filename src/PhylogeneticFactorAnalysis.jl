@@ -498,7 +498,7 @@ function run_selection_xml(input::PipelineInput, rep::Int, model::Int)
     mv(timer_filename, tp, force = input.overwrite)
 
     if input.tasks.record_selection_stats
-        process_selection_statistics(input, m, r)
+        process_selection_statistics(input, model, rep)
     end
 end
 
