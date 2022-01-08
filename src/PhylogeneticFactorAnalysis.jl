@@ -547,6 +547,11 @@ function run_selection_xml(input::PipelineInput)
     total_xml = model_selection.reps * length(model_selection)
     bookkeeper = Bookkeeper(total_xml)
 
+    if Threads.nthreads() > 1
+        println("Model selection using multiple threads. " *
+        "BEAST screen output will be suppressed for model selection only.\n")
+    end
+
 
     Threads.@threads for r = 1:model_selection.reps
         @sync for m = 1:length(model_selection)
