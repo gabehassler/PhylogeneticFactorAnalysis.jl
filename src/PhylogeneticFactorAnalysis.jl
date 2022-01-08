@@ -549,8 +549,7 @@ function run_selection_xml(input::PipelineInput)
 
     Threads.@threads for r = 1:model_selection.reps
         @sync for m = 1:length(model_selection)
-            Threads.@spawn run_selection_xml(input, r, m, stats_lock,
-                                             bookkeeper)
+            run_selection_xml(input, r, m, stats_lock, bookkeeper)
         end
     end
 end
