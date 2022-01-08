@@ -6,7 +6,7 @@ If you use this software in published research, please cite:
 
 Hassler, Gabriel W., Brigida Gallone, Leandro Aristide, William L. Allen, Max R. Tolkoff, Andrew J. Holbrook, Guy Baele, Philippe Lemey, and Marc A. Suchard. "Principled, practical, flexible, fast: a new approach to phylogenetic factor analysis." _arXiv preprint arXiv:2107.01246_ (2021).
 
-You can find the paper here: https://arxiv.org/abs/2107.01246
+You can find the paper here: <https://arxiv.org/abs/2107.01246>
 
 
 ## Installation Instructions
@@ -157,5 +157,30 @@ To load the package, type `using PhylogeneticFactorAnalysis` into the Julia REPL
 
 After loading the package, the only function required to run analyses is `pfa`.
 If `test.xml` is the path to your xml file, simply enter `pfa("test.xml")` into the Julia REPL to run the pipeline.
+
+
+## Multithreading
+This package uses multi-threading to speed up analyses.
+Essentially, it runs many BEAST runs in parallel rather than sequentially.
+To take advantage of the multi-threading capabilities, you must start Julia with multiple threads.
+
+By default, Julia starts with 1 thread.
+To check the number of threads, call `Threads.nthreads()` from within Julia.
+```
+julia> Threads.nthreads()
+1
+```
+
+To start with more threads, either set the `JULIA_NUM_THREADS` environment variable on your local machine to the number of threads you want, or start Julia from the command line as follows:
+```
+$ julia --threads 12
+```
+Note that you can replace the `12` with the number of threads you want.
+Using `--threads auto` lets Julia decide how many threads to use based on your local computer.
+You can find more information on setting the number of available threads here: <https://docs.julialang.org/en/v1/manual/multi-threading/>.
+
+To avoid memory issues (and otherwise overburdening your machine), the number of active threads is limited to the number of cross-validation training/test sets.
+If you're doing 5-fold cross validation, for example, then there will be a maximum of 5 active threads.
+You can set this via the `repeats` attribute in the `modelSelection` xml element.
 
 
