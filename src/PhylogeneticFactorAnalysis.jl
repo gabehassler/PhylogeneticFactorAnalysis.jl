@@ -507,11 +507,12 @@ function run_selection_xml(input::PipelineInput, rep::Int, model::Int,
         end
     end
 
+    capture_output = Threads.nthreads() > 1
 
     RunBeast.run_beast(xml_path, seed = input.beast_seed,
                         overwrite = input.overwrite,
                         beast_jar = input.jar_path,
-                        capture_output = true)
+                        capture_output = capture_output)
 
     begin
         lock(lk)
