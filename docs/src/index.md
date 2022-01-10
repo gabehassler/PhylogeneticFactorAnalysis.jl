@@ -1,6 +1,6 @@
 # PhylogeneticFactorAnalysis.jl Documentation
 
-View this repository on GitHub: https://github.com/gabehassler/PhylogeneticFactorAnalysis.jl
+View this repository on GitHub: <https://github.com/gabehassler/PhylogeneticFactorAnalysis.jl>
 
 If you use this software in published research, please cite:
 
