@@ -219,7 +219,7 @@ function factor_plot(plot_path::String, stats_path::String, tree_path::String,
                      fac_names::Vector{String} = String[],
                      layout::String = "rectangular",
                      tip_labels::Bool = true,
-                     line_width::Float64 = 1.0
+                     line_width::Real = 1.0
                      )
     @rput plot_path
     @rput stats_path
@@ -258,7 +258,7 @@ function factor_prep_and_plot(plot_path::String, log_path::BeastLog,
                               fac_names::Vector{String} = String[],
                               layout::String = "rectangular",
                               tip_labels::Bool = true,
-                              line_width::Float64 = 1.0,
+                              line_width::Real = 1.0,
                               kwargs...)
     if !(check_stats && isfile(stats_path))
         prep_factors(log_path, stats_path; kwargs...)
