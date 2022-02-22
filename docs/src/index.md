@@ -37,6 +37,11 @@ If you do not have R installed already, you can download and install it from the
 Once you have installed R, ensure the appropriate packages are installed by typing the following into the R console:
 ```
 install.packages(c("ggplot2", "wesanderson", "colorspace", "tidyr", "ggtree", "phytools", "tidytree", "aplot", "RColorBrewer", "ggnewscale", "phyclust", "treeio"))
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("treeio")
+BiocManager::install("ggtree")
 ```
 
 ### Add `PhylogeneticFactorAnalysis` to your Julia environment
