@@ -214,12 +214,23 @@ function prep_factors(svd_path::BeastLog, out_path::String;
     return taxa, F
 end
 
-function factor_plot(plot_path::String, stats_path::String, tree_path::String,
+function prep_optional_arguments(x::Array)
+    return [isempty(y) ? missing : y for y in x]
+end
+
+function factor_plot(args...; kwargs...)
+    prep_r_factors(args...; kwargs...)
+    run_r_factors()
+end
+
+function prep_r_factors(plot_path::String, stats_path::String, tree_path::String,
                      class_path::String;
                      fac_names::Vector{String} = String[],
                      layout::String = "rectangular",
                      tip_labels::Bool = true,
-                     line_width::Real = 1.0
+                     line_width::Real = 1.0,
+                     include_only::AbstractArray{<:AbstractString} = String[],
+                     relabel::DataFrame = DataFrame()
                      )
     @rput plot_path
     @rput stats_path
@@ -232,22 +243,29 @@ function factor_plot(plot_path::String, stats_path::String, tree_path::String,
     class_array = [class_path]
     @rput class_array
 
-    fac_names = isempty(fac_names) ? [missing] : fac_names
-    @rput fac_names
+    optional_arguments = prep_optional_arguments([fac_names, include_only, relabel])
+    @rput optional_arguments
+
 
     @rput layout
     @rput tip_labels
     @rput line_width
+end
+
+function run_r_factors()
 
     R"""
     source(R_PLOT_SCRIPT)
 
-    if (is.na(fac_names[1])) {
-        fac_names <- NA
-    }
+    fac_names <- optional_arguments[[1]]
+    include_only <- optional_arguments[[2]]
+    relabel <- optional_arguments[[3]]
+
+
     plot_factor_tree(plot_path, tree_path, stats_path, class_path=class_array[[1]],
                      fac_names = fac_names, layout = layout,
-                     tip_labels = tip_labels, line_width = line_width)
+                     tip_labels = tip_labels, line_width = line_width,
+                     include_only = include_only, relabel = relabel)
     """
 end
 
@@ -255,10 +273,12 @@ function factor_prep_and_plot(plot_path::String, log_path::BeastLog,
                               stats_path::String, tree_path::String;
                               class_path::String = "",
                               check_stats::Bool = false,
-                              fac_names::Vector{String} = String[],
+                              fac_names::AbstractArray{<:AbstractString} = String[],
                               layout::String = "rectangular",
                               tip_labels::Bool = true,
                               line_width::Real = 1.0,
+                              include_only::AbstractArray{<:AbstractString} = String[],
+                              relabel::DataFrame = DataFrame(),
                               kwargs...)
     if !(check_stats && isfile(stats_path))
         prep_factors(log_path, stats_path; kwargs...)
@@ -267,6 +287,8 @@ function factor_prep_and_plot(plot_path::String, log_path::BeastLog,
     factor_plot(plot_path, stats_path, tree_path, class_path,
                 layout = layout, fac_names = fac_names,
                 tip_labels = tip_labels,
-                line_width = line_width)
+                line_width = line_width,
+                include_only = include_only,
+                relabel = relabel)
 end
 
