@@ -41,8 +41,12 @@ fac_colors <- custom_color_scale(sRGB(1, 0, 0), sRGB(1, 1, 1), sRGB(0, 0, 1), f2
 
 ## Loadings plot
 
-plot_loadings <- function(csv_path, plot_name, labels_path = NA, height_scale=1.0, width_scale=1.0){
+plot_loadings <- function(csv_path, plot_name, labels_path = NA, factors = NA,
+                          height_scale=1.0, width_scale=1.0){
   df  <- read.csv(csv_path, header=TRUE, encoding="UTF-8")
+  if (!all(is.na(factors))) {
+    df <- df[df$factor %in% factors,]
+  }
 
   if (!is.na(labels_path)) {
     labels_df <- read.csv(labels_path, header=TRUE, fileEncoding="UTF-8-BOM")
@@ -247,16 +251,55 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
                              labels_offset=0.02,
                              fac_names=NA,
                              factor_fill = scale_fill_gradient2(midpoint = 0.0, low="blue", mid='white', high="red"),
-                             factor_color = scale_color_gradient2(midpoint = 0.0, low="blue", mid='white', high="red")
+                             factor_color = scale_color_gradient2(midpoint = 0.0, low="blue", mid='white', high="red"),
+                             relabel = NA,
+                             include_only = NA
 ) {
 
   x <- as.matrix(read.csv(factors_path, header=TRUE))
   k <- ncol(x) - 1
-  if (is.na(factors)) {
+  if (all(is.na(factors))) {
     factors <- 1:k
   }
 
+  base_tree <- read.tree(tree_path)
   taxa <- x[, 1]
+
+  include_class = !is.na(class_path)
+  if (include_class) {
+    class_df = read.csv(class_path)
+  }
+
+  if (!all(is.na(include_only))) {
+    drop_taxa = setdiff(taxa, include_only)
+    keep_rows = match(include_only, taxa)
+    x <- x[keep_rows, ]
+    for (taxon in drop_taxa) {
+      base_tree <- drop.tip(base_tree, taxon)
+    }
+
+    if (include_class) {
+      keep_rows <- match(include_only, class_df$taxon)
+      class_df <- class_df[keep_rows, ]
+    }
+  }
+
+  taxa <- x[, 1]
+
+  if (!all(is.na(relabel))) {
+    matched_rows <- match(relabel$original, taxa)
+    taxa[matched_rows] <- relabel$new
+
+    matched_rows <- match(relabel$original, base_tree$tip.label)
+    base_tree$tip.label[matched_rows] <- relabel$new
+
+    if (include_class) {
+      matched_rows <- match(relabel$original, class_df$taxon)
+      class_df$taxon[matched_rows] <- relabel$new
+    }
+
+  }
+
   x <- x[, factors + 1]
   x <- apply(as.matrix(x), 2, as.numeric)
   rownames(x) <- taxa
@@ -292,11 +335,11 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
     combined_layout = "fan"
   }
 
-  include_class = !is.na(class_path)
+  # include_class = !is.na(class_path)
   if (include_class) {
 
     # stop()
-    class_df = read.csv(class_path)
+    # class_df = read.csv(class_path)
     class_df[,2] <- as.factor(class_df[,2])
     classes <- data.frame(x = class_df[,2])
     colnames(classes) <- c(colnames(class_df)[2])
@@ -313,15 +356,15 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
 
   n_factors = length(factors)
 
-  if (is.na(fac_names)) {
+  if (all(is.na(fac_names))) {
     fac_names <- character(n_factors)
     for (i in 1:n_factors) {
       fac_names[i] = paste("factor", i)
     }
   }
 
+
   colnames(x) <- fac_names
-  base_tree <- read.tree(tree_path)
   max_height <- max(node.depth.edgelength(base_tree))
   base_tree$edge.length <- base_tree$edge.length / max_height
 
@@ -349,6 +392,7 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
     return(p4)
 
   } else {
+    print("f")
 
     for (i in 1:length(factors)) {
       k <- factors[i]
