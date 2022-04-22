@@ -4,6 +4,13 @@
 
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://gabehassler.github.io/PhylogeneticFactorAnalysis.jl/dev) [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://gabehassler.github.io/PhylogeneticFactorAnalysis.jl/stable)
 
+## Documentation
+Package documentation can be found [here](https://gabehassler.github.io/PhylogeneticFactorAnalysis.jl/stable).
+This documentation includes:
+  * instructions for setting up your computing environment
+  * instructions for running analyses using PhylogeneticFactorAnalysis.jl
+  * examples of how to specify various models
+
 ## Citation
 If you use this package, please cite:
 
