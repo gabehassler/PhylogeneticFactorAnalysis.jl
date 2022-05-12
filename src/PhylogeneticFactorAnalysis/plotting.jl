@@ -1,4 +1,4 @@
-const R_PLOT_SCRIPT = joinpath(@__DIR__, "..", "R", "plots.R")
+const R_PLOT_SCRIPT = joinpath(@__DIR__, "..", "..", "R", "plots.R")
 const LOAD_HEADER = "L"
 const SV_HEADER = "sv"
 const FAC_HEADER = "factors."

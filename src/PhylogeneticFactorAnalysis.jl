@@ -32,9 +32,11 @@ export load_jld,
 
 const BEAST_HOME = "BEAST_HOME"
 
-include("dependencies.jl")
+pfa_dir = "PhylogeneticFactorAnalysis"
 
-include("PostProcessing.jl")
+include(joinpath(pfa_dir, "dependencies.jl"))
+
+include(joinpath(pfa_dir, "PostProcessing.jl"))
 using PhylogeneticFactorAnalysis.PostProcessing
 
 
@@ -272,16 +274,16 @@ function get_data(input::PipelineInput)
     return input.data.trait_data
 end
 
-include("paths.jl")
-include("make_xml.jl")
-include("plotting.jl")
-include("writer.jl")
-include("parsers.jl")
-include("ui.jl")
-include("display.jl")
-include("tasks.jl")
+include(joinpath(pfa_dir, "paths.jl"))
+include(joinpath(pfa_dir, "make_xml.jl"))
+include(joinpath(pfa_dir, "plotting.jl"))
+include(joinpath(pfa_dir, "writer.jl"))
+include(joinpath(pfa_dir, "parsers.jl"))
+include(joinpath(pfa_dir, "ui.jl"))
+include(joinpath(pfa_dir, "display.jl"))
+include(joinpath(pfa_dir, "tasks.jl"))
 include("examples.jl")
-include("logs.jl")
+include(joinpath(pfa_dir, "logs.jl"))
 
 function run_pipeline(input::PipelineInput)
 
