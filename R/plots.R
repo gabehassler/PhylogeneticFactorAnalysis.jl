@@ -153,6 +153,7 @@ plot_loadings <- function(csv_path, plot_name, labels_path = NA, factors = NA,
   n_traits <- length(trait_levs)
   ggsave(plot_name, width=width_scale * (k * 2 + 2), height= height_scale * (n_traits * 0.15 + 1), units="in", limitsize=FALSE)
   gc()
+  return(p)
 }
 
 # mammals_dir = "C:\\Users\\gabeh\\OneDrive\\SD_storage\\many_traits\\public\\integrated_factors\\data\\mammalian_life_history"
@@ -392,7 +393,6 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
     return(p4)
 
   } else {
-    print("f")
 
     for (i in 1:length(factors)) {
       k <- factors[i]
@@ -406,7 +406,7 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
 
       if (include_class) {
         # p3 <- my_gheatmap(p2, classes, offset=0, width=heat_width, colnames_angle=90, colnames=TRUE, legend_title=colnames(classes)[1]) + class_fills # + class_colors
-        p3 <- gheatmap(p2, classes, offset=0, width=heat_width, colnames=FALSE, legend_title=colnames(classes)[1]) + class_fills # + class_colors
+        p3 <- gheatmap(p2, classes, offset=extra_offset, width=heat_width, colnames=FALSE, legend_title=colnames(classes)[1]) + class_fills # + class_colors
         # scale_fill_manual(values=class_palette, name=colnames(classes)[1])
         # scale_x_ggtree() +
         # scale_y_continuous(expand=c(0, 0.3))
@@ -422,6 +422,10 @@ plot_factor_tree <- function(name, tree_path, factors_path, factors = NA,
       svg(pname, height=height, width=width)
       print(p3)
       dev.off()
+      gc()
+      if (length(factors) == 1) {
+        return(p3)
+      }
     }
   }
   gc()
