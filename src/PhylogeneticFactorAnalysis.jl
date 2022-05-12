@@ -29,6 +29,9 @@ export load_jld,
        run_example,
        get_data
 
+# import standalone modules
+include(joinpath("PostProcessing", "PostProcessing.jl"))
+
 
 const BEAST_HOME = "BEAST_HOME"
 
@@ -37,7 +40,7 @@ pfa_dir = "PhylogeneticFactorAnalysis"
 include(joinpath(pfa_dir, "dependencies.jl"))
 
 include(joinpath(pfa_dir, "PostProcessing.jl"))
-using PhylogeneticFactorAnalysis.PostProcessing
+using PhylogeneticFactorAnalysis.OldPostProcessing
 
 
 function find_beast()
