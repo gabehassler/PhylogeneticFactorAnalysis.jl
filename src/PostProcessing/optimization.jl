@@ -101,7 +101,6 @@ function optimize_3d(C::Array{Float64, 3}, f::Function; n_steps::Int = 20) #TODO
     θ_max = (NaN, NaN, NaN)
     ind = 1
     for i = 1:n
-        @show i
         for j in 1:n
             for k in 1:n
                 θ = (θs[i], θs[j], θs[k])
