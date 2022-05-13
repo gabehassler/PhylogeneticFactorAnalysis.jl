@@ -31,6 +31,7 @@ export load_jld,
 
 post_dir = "PostProcessing"
 pfa_dir = "PhylogeneticFactorAnalysis"
+plotting_dir = "plotting"
 
 # import standalone modules
 include(joinpath(post_dir, "PostProcessing.jl"))
@@ -284,7 +285,7 @@ end
 
 include(joinpath(pfa_dir, "paths.jl"))
 include(joinpath(pfa_dir, "make_xml.jl"))
-include(joinpath(pfa_dir, "plotting.jl"))
+include(joinpath(plotting_dir, "plotting.jl"))
 include(joinpath(pfa_dir, "writer.jl"))
 include(joinpath(pfa_dir, "parsers.jl"))
 include(joinpath(pfa_dir, "ui.jl"))
