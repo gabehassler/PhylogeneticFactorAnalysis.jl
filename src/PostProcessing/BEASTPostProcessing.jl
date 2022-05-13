@@ -1,6 +1,8 @@
 module BEASTPostProcessing
 #want to keep BEAST-specific code seperate from more general code
 
+export post_process
+
 using Statistics: cov2cor!
 # using PhylogeneticFactorAnalysis.PostProcessing: ClusterStatistics, optimize_2d, minimal_variance
 using DataFrames
