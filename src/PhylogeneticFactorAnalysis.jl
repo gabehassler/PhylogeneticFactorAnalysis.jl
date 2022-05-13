@@ -27,7 +27,9 @@ export load_jld,
        check_r,
        import_example,
        run_example,
-       get_data
+       get_data,
+       plot_correlation,
+       plot_loadings
 
 post_dir = "PostProcessing"
 pfa_dir = "PhylogeneticFactorAnalysis"
@@ -285,7 +287,6 @@ end
 
 include(joinpath(pfa_dir, "paths.jl"))
 include(joinpath(pfa_dir, "make_xml.jl"))
-include(joinpath(plotting_dir, "plotting.jl"))
 include(joinpath(pfa_dir, "writer.jl"))
 include(joinpath(pfa_dir, "parsers.jl"))
 include(joinpath(pfa_dir, "ui.jl"))
@@ -293,6 +294,9 @@ include(joinpath(pfa_dir, "display.jl"))
 include(joinpath(pfa_dir, "tasks.jl"))
 include("examples.jl")
 include(joinpath(pfa_dir, "logs.jl"))
+include(joinpath(plotting_dir, "plotting.jl"))
+include(joinpath(plotting_dir, "outside_pipeline.jl"))
+
 
 function run_pipeline(input::PipelineInput)
 
