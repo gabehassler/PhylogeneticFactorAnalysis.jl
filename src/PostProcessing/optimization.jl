@@ -122,7 +122,9 @@ end
 
 function optimize(C::Array{Float64, 3}, f::Function; kwargs...)
     k = size(C, 1)
-    if k == 2
+    if k == 1
+        return ones(1, 1)
+    elseif k == 2
         return optimize_2d(C, f; kwargs...)
     elseif k == 3
         return optimize_3d(C, f; kwargs...)
