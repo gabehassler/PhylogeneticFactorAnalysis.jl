@@ -387,7 +387,7 @@ function rotate_sem(in_path::String, out_path::String, plan::RotationPlan;
 
     if !isnothing(optimization)
         C_sub = C[1:n_factors, (n_factors + 1):end, :]
-        R = optimize(C_sub, optimization)
+        R = optimize_one_trait(C_sub, optimization)
         R = R'
         optimized_rotation = zeros(n_factors, n_factors, n) # TODO: don't need to repeat same matrix over and over
         for i = 1:n
@@ -473,7 +473,7 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
             @warn "optimization with multiple factor models has not been tested"
         end
         C_sub = C[model_inds, other_inds, :]
-        R = optimize(C_sub, optimization)
+        R = PostProcessing.optimize_one_trait(C_sub, optimization)
         R = R'
         optimized_rotation = zeros(dim_factor, dim_factor, n) # TODO: don't need to repeat same matrix over and over
         for i = 1:n
