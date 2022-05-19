@@ -143,6 +143,10 @@ function make_labels(header::String, x::Vector{Float64})
     return header
 end
 
+function make_labels(header::Vector{<:AbstractString}, x::AbstractMatrix{Float64})
+    return header
+end
+
 function make_labels(header::String, x::Matrix{Float64})
     return ["header$i" for i = 1:size(x, 1)]
 end
@@ -165,11 +169,11 @@ function make_labels(labels::Array{String}, x::Array{Float64, 3})
     end
 end
 
-function make_2d(data::Matrix{Float64})
+function make_2d(data::AbstractMatrix{Float64})
     return data
 end
 
-function make_2d(data::Array{Float64, 3})
+function make_2d(data::AbstractArray{Float64, 3})
     p, k, n = size(data)
 
     return reshape(data, p * k, n)
@@ -194,7 +198,7 @@ function save_log(log_path::String, df::DataFrame,
 end
 
 function update_df!(df::DataFrame,
-        data_sets::Vector{<:Pair{<:T, <:Array{Float64}}})
+        data_sets::Vector{<:Pair{<:T, <:AbstractArray{Float64}}})
     for set in data_sets
         header = set[1]
         data = set[2]
@@ -454,8 +458,19 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
                             transpose = true)
     C, C_labels = collect_matrix(df, "correlation.", dim_joint, dim_joint)
     V, V_labels = collect_matrix(df, "mbd.variance", dim_joint, dim_joint)
-
     @assert size(C)[1:2] == size(V)[1:2] == (dim_joint, dim_joint)
+
+
+    prec_header = "$trait_name.factorPrecision"
+    prec_df = subset_startswith(df, prec_header)
+    prec = Matrix(prec_df)'
+    prec_labels = names(prec_df)
+    @assert length(prec_labels) == dim_trait
+
+
+    prop_header = "$trait_name.proportion"
+    prop_df = subset_startswith(df, prop_header)
+    @assert size(prop_df, 2) == 2 + dim_factor * 2
 
 
     final_rotation  = do_rotations!(plan, L, map_ind)
@@ -465,6 +480,9 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
     other_inds = setdiff(1:dim_joint, model_inds)
 
     rotate_other_parameters!(F, C, V, final_rotation, model_inds, dim_joint)
+
+    F_model = @view F[:, model_inds, :]
+    update_proportions!(prop_df, F_model, L, prec, prop_header)
 
     n = size(C, 3)
 
@@ -486,8 +504,13 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
         rotate_other_parameters!(F, C, V, optimized_rotation, model_inds, dim_joint)
     end
 
+
+    prop_labels = names(prop_df)
+    props = Matrix(prop_df)
+
     update_df!(df,
-             [L_labels => L, F_labels => transpose_samples(F), C_labels => C, V_labels => V]
+             [L_labels => L, F_labels => transpose_samples(F), C_labels => C,
+             V_labels => V, prop_labels => props']
             )
 end
 
@@ -553,5 +576,61 @@ function post_process(log_path::String,
            optimization = optimization)
     return nothing
 end
+
+
+function factor_proportion_statistics(F::AbstractMatrix{Float64},
+                                      L::AbstractMatrix{Float64},
+                                      λ::AbstractVector{Float64})
+    FtF = F' * F
+    LLt = L' * L
+
+    f = mean(F, dims=1)
+    n = size(F, 1)
+    FtF -= n * f' * f
+
+    H = LLt .* FtF #hadamard product
+    h = diag(H)
+    fac_var = sum(H)
+    ind_var = sum(h)
+
+    res_var = (n - 1) * sum(1/x for x in λ)
+
+    total_var = sum(H) + res_var
+
+    fac_prop = fac_var / total_var
+    ind_prop = ind_var / fac_var
+
+    fac_props = h ./ fac_var
+    total_props = fac_props .* fac_prop
+
+    return (factor_proportion = fac_prop,
+            absolute_proportions = total_props,
+            relative_proportions = fac_props,
+            marginal_proportion = ind_prop
+            )
+
+end
+
+function update_proportions!(df::DataFrame,
+                             F::AbstractArray{Float64, 3},
+                             L::AbstractArray{Float64, 3},
+                             λ::AbstractArray{Float64, 2},
+                             header::AbstractString)
+    n = size(F, 3)
+    k = size(F, 2)
+    for i = 1:n
+        Fi = @view F[:, :, i]
+        Li = @view L[:, :, i]
+        λi = @view λ[:, i]
+        fp, aps, rps, mp = factor_proportion_statistics(Fi, Li, λi)
+        df[i, header * ".factorProportion"] = fp
+        df[i, header * ".relativeMarginalProportion"] = mp
+        for j = 1:k
+            df[i, header * ".absoluteProportion.$j"] =  aps[j]
+            df[i, header * ".relativeProportion.$j"] =  rps[j]
+        end
+    end
+end
+
 
 end
