@@ -369,7 +369,6 @@ function post_process(log_path::String,
     rotate_multi_sem(log_path, rotated_path,
            RotationPlan(SVDRotation, ProcrustesRotation),
            params,
-           burnin = 0.1,
            double_check = true,
            optimization = optimization)
     return nothing
