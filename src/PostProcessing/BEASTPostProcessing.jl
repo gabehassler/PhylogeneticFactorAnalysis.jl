@@ -4,7 +4,6 @@ module BEASTPostProcessing
 export post_process
 
 using Statistics: cov2cor!
-# using PhylogeneticFactorAnalysis.PostProcessing: ClusterStatistics, optimize_2d, minimal_variance
 using DataFrames
 using CSV
 using Statistics
@@ -35,11 +34,6 @@ function count_startswith(S::Array{String}, s::String)
     return count(x -> startswith(x, s), S)
 end
 
-function collect_loadings(log_path::String; kwargs...)
-    df = CSV.read(log_path, DataFrame, header=4, delim='\t')
-    return collect_loadings(df; kwargs...)
-end
-
 import LinearAlgebra.adjoint
 function adjoint(X::AbstractMatrix{<:AbstractString})
     k, p = size(X)
@@ -49,7 +43,6 @@ end
 function absmax(x::Array{<:Real})
     return maximum(abs.(x))
 end
-
 
 
 function collect_matrix(df::DataFrame, header::String, n_rows::Int, n_cols::Int;
@@ -100,74 +93,6 @@ function collect_dimensions(df::DataFrame;
 end
 
 
-function collect_loadings(df::DataFrame;
-                          L_header = "L",
-                          fac_header = "factors.",
-                          prec_header = "factorPrecision",
-                          normalization = "none")
-
-    @unpack n_traits, n_factors, n_taxa = collect_dimensions(df)
-    k = n_factors
-
-    n_states = size(df, 1)
-
-    L_data = subset_startswith(df, L_header)
-    fac_data = subset_startswith(df, fac_header)
-
-    L = zeros(n_traits, k, n_states)
-    L_mat = Matrix(L_data)
-    F_mat = Matrix(fac_data)
-    for state = 1:n_states
-        L_sub = reshape(L_mat[state, :], n_traits, k)
-
-        if normalization == "none"
-            L[:, :, state] .= L_sub
-        elseif normalization == "factor_sd"
-
-            F_sub = reshape(F_mat[state, :], k, n_taxa)
-
-            F_std = std(F_sub, dims=2, corrected=false)
-            L[:, :, state] .= L_sub * Diagonal(F_std)
-        elseif normalization == "loadings_norm"
-            L_norms = [norm(L_sub[:, i]) for i = 1:k]
-            L[:, :, state] .= L_sub * inv(Diagonal(L_norms))
-        else
-            error("Unknown normalization")
-        end
-    end
-
-    return L
-end
-
-function make_labels(header::String, x::Vector{Float64})
-    return header
-end
-
-function make_labels(header::Vector{<:AbstractString}, x::AbstractMatrix{Float64})
-    return header
-end
-
-function make_labels(header::String, x::Matrix{Float64})
-    return ["header$i" for i = 1:size(x, 1)]
-end
-
-function make_labels(header::String, x::Array{Float64, 3})
-    p, k, _ = size(x)
-    return vec(["$header$j$i" for i = 1:p, j = 1:k])
-end
-
-function make_labels(labels::Array{String}, x::Array{Float64, 3})
-    s = size(@view x[:, :, 1])
-    if size(labels) == s
-        return labels
-    elseif size(labels') == s
-        return labels'
-    else
-        @show s
-        @show size(labels)
-        error("incompatible dimensions")
-    end
-end
 
 function make_2d(data::AbstractMatrix{Float64})
     return data
@@ -179,31 +104,14 @@ function make_2d(data::AbstractArray{Float64, 3})
     return reshape(data, p * k, n)
 end
 
-T = Union{AbstractString, AbstractArray{<:AbstractString}}
-
-function save_log(log_path::String, states::Vector{Int},
-                  data_sets::Vector{<:Pair{<:T, <:Array{Float64}}})
-
-
-    df = DataFrame(state = states)
-    save_log(log_path, df, data_sets)
-end
-
-
-function save_log(log_path::String, df::DataFrame,
-                  data_sets::Vector{<:Pair{<:T, <:Array{Float64}}})
-
-    update_df!(df, data_sets)
-    CSV.write(log_path, df, delim='\t')
-end
-
 function update_df!(df::DataFrame,
-        data_sets::Vector{<:Pair{<:T, <:AbstractArray{Float64}}})
+        data_sets::Vector{<:Pair{<:AbstractArray{<:AbstractString},
+                                 <:AbstractArray{Float64}}
+                         }
+                   )
     for set in data_sets
-        header = set[1]
+        labels = set[1]
         data = set[2]
-
-        labels = make_labels(header, data)
 
         reshaped_data = make_2d(data)
 
@@ -305,115 +213,6 @@ function check_valid_rotation(p1::String, p2::String;
 end
 
 
-
-# function rotate_other_parameters!(F::Array{Float64, 3}, C::Array{Float64, 3},
-#                                   V::Array{Float64, 3}, rotations::Rotations,
-#                                   n_factors::Int, extra_traits::Int)
-
-#     expanded_rotation = expand_rotation(rotations, extra_traits)
-#     if (size(F, 1)) > 0
-#         F .= apply_inverse(F, expanded_rotation, transpose = true)
-#     end
-
-#     n_factors_plus = n_factors + extra_traits
-
-#     r1 = (n_factors + 1):n_factors_plus
-#     r2 =  1:n_factors
-#     V_sub = V[r1, r2, :]
-#     V_sub = apply_inverse(V_sub, rotations, transpose = true)
-
-#     for i = 1:size(V, 3)
-#         Vr = @view V_sub[:, :, i]
-#         V[r1, r2, i] .= Vr
-#         V[r2, r1, i] .= Vr'
-
-#         C[:, :, i] .= cov2corr(V[:, :, i])
-#     end
-# end
-
-function rotate_other_parameters!(F::Array{Float64, 3}, C::Array{Float64, 3},
-                                  V::Array{Float64, 3}, rotations::Rotations,
-                                  n_factors::Int, extra_traits::Int)
-
-    expanded_rotation = expand_rotation(rotations, extra_traits)
-
-    F .= apply_inverse(F, expanded_rotation, transpose = true)
-
-    n_factors_plus = n_factors + extra_traits
-
-    r1 = (n_factors + 1):n_factors_plus
-    r2 =  1:n_factors
-    V_sub = V[r1, r2, :]
-    V_sub = apply_inverse(V_sub, rotations, transpose = true)
-
-    for i = 1:size(V, 3)
-        Vr = @view V_sub[:, :, i]
-        V[r1, r2, i] .= Vr
-        V[r2, r1, i] .= Vr'
-
-        C[:, :, i] .= cov2corr(V[:, :, i])
-    end
-end
-
-
-
-function rotate_sem(in_path::String, out_path::String, plan::RotationPlan;
-                    extra_traits::Int = 0,
-                    burnin::Float64 = 0.0,
-                    double_check::Bool = false,
-                    optimization::Union{Nothing, Function} = nothing)
-    df = import_log(log_path, burnin=burnin)
-    n = size(df, 1)
-    @unpack n_traits, n_factors, n_taxa = collect_dimensions(df,
-                                                extra_traits = extra_traits)
-    map_ind = findmax(df.joint)[2]
-
-    n_factors_plus = n_factors + extra_traits
-    L, L_labels = collect_matrix(df, L_HEADER, n_traits, n_factors)
-    F, F_labels = collect_matrix(df, FAC_HEADER, n_factors_plus, n_taxa,
-                               transpose = true)
-    C, C_labels = collect_matrix(df, "correlation.", n_factors_plus, n_factors_plus)
-    V, V_labels = collect_matrix(df, "variance", n_factors_plus, n_factors_plus)
-    @assert size(C) == size(V) == (n_factors_plus, n_factors_plus)
-
-
-    final_rotation  = do_rotations!(plan, L, map_ind)
-
-
-
-    if double_check
-        L_original = loadings_and_factors(df, extra_traits = extra_traits).L
-        check_valid_rotation(final_rotation)
-        check_transform_results(L_original, L, final_rotation)
-    end
-
-    rotate_other_parameters!(F, C, V, final_rotation, n_factors, extra_traits)
-
-    if !isnothing(optimization)
-        C_sub = C[1:n_factors, (n_factors + 1):end, :]
-        R = optimize_one_trait(C_sub, optimization)
-        R = R'
-        optimized_rotation = zeros(n_factors, n_factors, n) # TODO: don't need to repeat same matrix over and over
-        for i = 1:n
-            optimized_rotation[:, :, i] .= R
-        end
-
-        optimized_rotation = Rotations(optimized_rotation)
-
-        L = apply_transform(L, optimized_rotation)
-        rotate_other_parameters!(F, C, V, optimized_rotation, n_factors, extra_traits)
-    end
-
-    save_log(out_path,
-             df,
-             [L_labels => L, F_labels => transpose_samples(F), C_labels => C, V_labels => V]
-            )
-
-    if double_check
-        check_valid_rotation(in_path, out_path, b1 = burnin, tol=1e-3,
-                             extra_traits = extra_traits)
-    end
-end
 
 function rotate_other_parameters!(F::Array{Float64, 3}, C::Array{Float64, 3},
                                   V::Array{Float64, 3}, rotations::Rotations,
@@ -570,7 +369,6 @@ function post_process(log_path::String,
     rotate_multi_sem(log_path, rotated_path,
            RotationPlan(SVDRotation, ProcrustesRotation),
            params,
-        #    extra_traits = extra_traits,
            burnin = 0.1,
            double_check = true,
            optimization = optimization)
