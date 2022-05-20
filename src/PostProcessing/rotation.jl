@@ -55,7 +55,7 @@ function apply_inverse(data::Array{Float64, 3}, rotations::Rotations;
     end
 end
 
-abstract type AbstractRotation <:AbstractTransformer end
+abstract type AbstractRotation <: AbstractTransformer end
 # interface:
 #   update_rotation!
 #   update_statistics!
