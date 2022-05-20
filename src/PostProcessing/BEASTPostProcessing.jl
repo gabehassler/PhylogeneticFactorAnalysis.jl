@@ -256,7 +256,9 @@ function post_process(log_path::String,
                       rotated_path::String,
                       traits::Vector{Pair{String, Tuple{Int, Int}}},
                       n_taxa::Int;
-                      optimize::Bool = false
+                      optimize::Bool = false,
+                      rotation_plan = RotationPlan(SVDRotation,
+                                                   ProcrustesRotation)
                       )
 
     n = length(traits)
@@ -270,7 +272,7 @@ function post_process(log_path::String,
     optimization = optimize ? PostProcessing.maximum_correlation : nothing
 
     rotate_multi_sem(log_path, rotated_path,
-           RotationPlan(SVDRotation, ProcrustesRotation),
+           rotation_plan,
            params,
            double_check = true,
            optimization = optimization)

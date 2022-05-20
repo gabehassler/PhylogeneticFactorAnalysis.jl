@@ -1,6 +1,7 @@
 using Test
 using PhylogeneticFactorAnalysis
 using PhylogeneticFactorAnalysis.BEASTPostProcessing
+using PhylogeneticFactorAnalysis.PostProcessing
 using UnPack
 using BeastUtils.MatrixUtils
 using BeastUtils.Logs
@@ -135,9 +136,17 @@ rotated_path = joinpath(@__DIR__, "rotated.log")
 
 dims = ["fac" => (3, 10), "trait" => (1, 1)]
 n_taxa = 20
-post_process(log_path, rotated_path, dims, 20)
 
 
-
+post_process(log_path, rotated_path, dims, n_taxa)
 @test check_valid_rotation(log_path, rotated_path, dims, n_taxa)
+
+post_process(log_path, rotated_path, dims, n_taxa, optimize=true)
+@test check_valid_rotation(log_path, rotated_path, dims, n_taxa)
+
+# post_process(log_path, rotated_path, dims, n_taxa,
+#              rotation_plan = RotationPlan(SVDRotation, Signs))
+# @test check_valid_rotation(log_path, rotated_path, dims, n_taxa)
+
+GC.gc() #TODO: this should get unlinked earlier
 rm(rotated_path)
