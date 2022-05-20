@@ -74,25 +74,6 @@ function collect_matrix(df::DataFrame, header::String, n_rows::Int, n_cols::Int;
     return data, labels
 end
 
-function collect_dimensions(df::DataFrame;
-                            L_header::String = L_HEADER,
-                            fac_header::String = FAC_HEADER,
-                            prec_header::String = PREC_HEADER,
-                            extra_traits::Int = 0)
-
-    nms = names(df)
-    n_traits = count_startswith(nms, prec_header)
-
-    n_factors, r = divrem(count_startswith(nms, L_header), n_traits)
-    @assert r == 0
-
-    n_taxa, r = divrem(count_startswith(nms, fac_header), n_factors + extra_traits)
-    @assert r == 0
-
-    return (n_traits = n_traits, n_factors = n_factors, n_taxa = n_taxa)
-end
-
-
 
 function make_2d(data::AbstractMatrix{Float64})
     return data
@@ -230,7 +211,7 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
     props = Matrix(prop_df)
 
     update_df!(df,
-             [L_labels => L, F_labels => transpose_samples(F), C_labels => C,
+             [L_labels => L, F_labels => F, C_labels => C,
              V_labels => V, prop_labels => props']
             )
 end
