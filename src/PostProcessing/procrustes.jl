@@ -61,11 +61,18 @@ end
 
 struct ProcrustesRotation <: AbstractRotation
     reference::AbstractArray{Float64, 2}
+    dims::Vector{Int}
+end
+
+function ProcrustesRotation(data::AbstractArray{Float64, 2})
+    k = size(data, 2)
+    return ProcrustesRotation(data, collect(1:k))
 end
 
 function ProcrustesRotation(data::AbstractArray{Float64, 3})
     p, k, _ = size(data)
-    return ProcrustesRotation(reshape(mean(data, dims=3), p, k))
+    dims = collect(1:k)
+    return ProcrustesRotation(reshape(mean(data, dims=3), p, k), dims)
 end
 
 function update_rotation!(rotations::Rotations, data::Array{Float64, 3},
@@ -108,23 +115,33 @@ end
 ################################################################################
 
 struct SVDRotation <: AbstractRotation
-    # doesn't need to store any statistics
+    dims::Vector{Int}
 end
 
-function SVDRotation(::Matrix{Float64})
-    return SVDRotation()
+function SVDRotation(X::Matrix{Float64})
+    k = size(X, 2)
+    return SVDRotation(collect(1:k))
 end
 
 function update_rotation!(rotations::Rotations, data::Array{Float64, 3},
-                          ::SVDRotation)
+                          svd_rot::SVDRotation)
 
     p, k, n = size(data)
+    @unpack dims = svd_rot
+    Y_dims = zeros(p, length(dims))
 
     for i = 1:n
         Y = rotate_sample(data, rotations, i)
-        s = svd(Y)
-        update_rotation!(rotations, s.Vt', i)
+        Y_dims .= @view Y[:, dims]
+        s = svd(Y_dims)
+        R_dims = s.Vt'
+        if length(dims) == k
+            R = R_dims
+        else
+            R = Matrix(Diagonal(ones(k)))
+            R[dims, dims] .= R_dims
+        end
+        update_rotation!(rotations, R, i)
     end
 end
-
 
