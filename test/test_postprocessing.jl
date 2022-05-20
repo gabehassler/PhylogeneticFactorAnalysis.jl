@@ -140,3 +140,4 @@ post_process(log_path, rotated_path, dims, 20)
 
 
 @test check_valid_rotation(log_path, rotated_path, dims, n_taxa)
+rm(rotated_path)
