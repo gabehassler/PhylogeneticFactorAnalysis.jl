@@ -61,7 +61,7 @@ end
 import PhylogeneticFactorAnalysis.PostProcessing.check_valid_rotation
 function check_valid_rotation(p1::String, p2::String, dims::T, n::Int;
                               b1::Float64 = 0.0, b2::Float64 = 0.0,
-                              tol::Float64 = 1e-10)
+                              tol::Float64 = 1e-9)
     lf1 = loadings_and_factors(p1, dims, n, burnin = b1)
     lf2 = loadings_and_factors(p2, dims, n, burnin = b2)
     L1, F1, C1, V1 = lf1.L, lf1.F, lf1.C, lf1.V
