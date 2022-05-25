@@ -48,12 +48,9 @@ function plot_loadings(plot_path::String, log_path::BeastLog; kwargs...)
 
 
 
-    PhylogeneticFactorAnalysis.load_prep_and_plot(plot_path, log_path, stats_path; kwargs...)
+    load_prep_and_plot(plot_path, log_path, stats_path; kwargs...)
     rm(stats_path)
 end
-
-using BeastUtils.Logs, BeastUtils.MatrixUtils, Statistics, UnPack, DataFrames
-using PhylogeneticFactorAnalysis, CSV, BeastUtils.PosteriorSummary
 
 
 function process_variance(log_path::BeastLog; var_start::String = "mbd.variance")

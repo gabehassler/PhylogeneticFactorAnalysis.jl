@@ -48,21 +48,29 @@ plot_loadings <- function(csv_path, plot_name, labels_path = NA, factors = NA,
     df <- df[df$factor %in% factors,]
   }
 
+  trait_levs <- unique(df$trait)
+  trait_labels <- c()
+
   if (!is.na(labels_path)) {
     labels_df <- read.csv(labels_path, header=TRUE, fileEncoding="UTF-8-BOM")
+    for (i in 1:length(trait_levs)[[1]]) {
+      trait_labels[labels_df$trait[i]] = labels_df$pretty[i]
+    }
 
-    trait_levs <- labels_df$pretty
+    # trait_levs <- labels_df$pretty
     cat_levs <- unique(labels_df$cat)
 
     cat_dict <- labels_df$cat
     names(cat_dict) <- labels_df$trait
     df$cat <- cat_dict[df$trait]
 
-    names(trait_levs) <- labels_df$trait
+    # names(trait_levs) <- labels_df$trait
 
-    df$trait <- trait_levs[df$trait]
+    # df$trait <- trait_levs[df$trait]
   } else {
-    trait_levs <- unique(df$trait)
+    for (i in 1:length(trait_levs)[[1]]) {
+      trait_labels[trait_levs[i]] = trait_levs[i]
+    }
     df$cat <- rep("NA", nrow(df))
     cat_levs <- c("NA")
   }
@@ -116,13 +124,12 @@ plot_loadings <- function(csv_path, plot_name, labels_path = NA, factors = NA,
   #   ps <- c(ps, plot_single_row(df, 1, ymin, ymax))
   # }
 
-
   p <- ggplot(df) +
     geom_vline(xintercept=0, linetype="dashed") +
     geom_point(aes(y=trait, x=L, color=sign_perc), size=1.5) +
     geom_errorbarh(aes(y=trait, xmin=hpdl, xmax=hpdu, color=sign_perc), height=0.0, size=1) +
     scale_color_gradientn(colors = load_colors, limits=c(0, 1), name="probability > 0", na.value="grey75") +
-    scale_y_discrete(limits=rev) +
+    scale_y_discrete(limits=rev, labels=trait_labels) +
     # scale_color_gradient2(low="orange", mid="white", high="purple", limits=c(-1, 1), name="L") +
     #facet_grid(~ cat, scales="free_x", space="free_x") +
     #geom_tile() +
@@ -144,7 +151,6 @@ plot_loadings <- function(csv_path, plot_name, labels_path = NA, factors = NA,
                scales="free_y",
                space="free_y",
                switch = "y")
-
   if (length(cat_levs) == 1) {
     p <- p + theme(strip.text.y = element_blank())
   }
