@@ -231,6 +231,7 @@ end
 function rotate_multi_sem(log_path::String, rotate_path::String,
         plan::RotationPlan, parameters::JointParameters;
         burnin::Float64 = 0.0,
+        minimum_map::Float64 = maximum(0.1 - burnin, 0.0),
         kw_args...)
 
     @unpack tree_dims, data_dims = parameters
@@ -240,7 +241,8 @@ function rotate_multi_sem(log_path::String, rotate_path::String,
     df = import_log(log_path, burnin=burnin)
     n = size(df, 1)
 
-    map_ind = findmax(df.joint)[2]
+    map_offset = Int(round(n * minimum_map))
+    map_ind = findmax(df.joint[(map_offset + 1):end])[2] + map_offset
 
 
     for i = 1:m
