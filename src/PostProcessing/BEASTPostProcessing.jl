@@ -231,7 +231,7 @@ end
 function rotate_multi_sem(log_path::String, rotate_path::String,
         plan::RotationPlan, parameters::JointParameters;
         burnin::Float64 = 0.0,
-        minimum_map::Float64 = maximum(0.1 - burnin, 0.0),
+        minimum_map::Float64 = max(0.1 - burnin, 0.0),
         kw_args...)
 
     @unpack tree_dims, data_dims = parameters
