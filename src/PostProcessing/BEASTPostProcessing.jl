@@ -147,7 +147,9 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
         model::Int;
         map_ind::Int = 1,
         double_check::Bool = false,
-        optimization::Union{Nothing, Function} = nothing)
+        optimization::Union{Nothing, Function} = nothing,
+        variance_header::AbstractString = "mbd.variance",
+        correlation_header::AbstractString = "correlation.")
     dim_factor = parameters.tree_dims[model]
     dim_trait = parameters.data_dims[model]
     dim_joint = sum(parameters.tree_dims)
@@ -158,8 +160,15 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
     L, L_labels = collect_matrix(df, "$trait_name.$L_HEADER", dim_trait, dim_factor)
     F, F_labels = collect_matrix(df, joint_name, dim_joint, n_taxa,
                             transpose = true)
-    C, C_labels = collect_matrix(df, "correlation.", dim_joint, dim_joint)
-    V, V_labels = collect_matrix(df, "mbd.variance", dim_joint, dim_joint)
+    C, C_labels = collect_matrix(df, correlation_header, dim_joint, dim_joint)
+    V, V_labels = collect_matrix(df, variance_header, dim_joint, dim_joint)
+    if (size(C)[1:2] != (dim_joint, dim_joint) ||
+        size(V)[1:2] != (dim_joint, dim_joint))
+
+        error("Correlation matrix with header $correlation_header has size " *
+              "$(size(C)[1:2]) while variance matrix with header " *
+              "$variance_header has size $(size(V)[1:2])")
+    end
     @assert size(C)[1:2] == size(V)[1:2] == (dim_joint, dim_joint)
 
 
@@ -260,7 +269,8 @@ function post_process(log_path::String,
                       n_taxa::Int;
                       optimize::Bool = false,
                       rotation_plan = RotationPlan(SVDRotation,
-                                                   ProcrustesRotation)
+                                                   ProcrustesRotation),
+                      kwargs...
                       )
 
     n = length(traits)
@@ -277,7 +287,8 @@ function post_process(log_path::String,
            rotation_plan,
            params,
            double_check = true,
-           optimization = optimization)
+           optimization = optimization;
+           kwargs...)
     return nothing
 end
 
