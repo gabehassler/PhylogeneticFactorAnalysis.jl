@@ -192,8 +192,6 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
 
     rotate_other_parameters!(F, C, V, final_rotation, model_inds, dim_joint)
 
-    F_model = @view F[:, model_inds, :]
-    update_proportions!(prop_df, F_model, L, prec, prop_header)
 
     n = size(C, 3)
 
@@ -215,6 +213,8 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
         rotate_other_parameters!(F, C, V, optimized_rotation, model_inds, dim_joint)
     end
 
+    F_model = @view F[:, model_inds, :]
+    update_proportions!(prop_df, F_model, L, prec, prop_header)
 
     prop_labels = names(prop_df)
     props = Matrix(prop_df)
@@ -270,6 +270,7 @@ function post_process(log_path::String,
                       optimize::Bool = false,
                       rotation_plan = RotationPlan(SVDRotation,
                                                    ProcrustesRotation),
+                      joint_name::String = "",
                       kwargs...
                       )
 
@@ -277,7 +278,7 @@ function post_process(log_path::String,
     tree_dims = [x[2][1] for x in traits]
     data_dims = [x[2][2] for x in traits]
     trait_names = [x[1] for x in traits]
-    joint_name = join(trait_names, '.') * ".joint"
+    joint_name = isempty(joint_name) ? join(trait_names, '.') * ".joint" : joint_name
 
     params = JointParameters(tree_dims, data_dims, trait_names, joint_name, n_taxa)
 
