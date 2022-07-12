@@ -2,6 +2,7 @@ const R_PLOT_SCRIPT = joinpath(@__DIR__, "..", "..", "R", "plots.R")
 const LOAD_HEADER = "L"
 const SV_HEADER = "sv"
 const FAC_HEADER = "factors."
+const PREC_HEADER = "factorPrecision"
 
 
 function prep_loadings(input::PipelineInput, log_path::String,
@@ -27,7 +28,7 @@ function prep_loadings(log_path::BeastLog, csv_path::String;
                        burnin::Float64 = 0.1,
                        hpd_alpha::Float64 = 0.05,
                        L_header::String = LOAD_HEADER,
-                       sv_header::String = SV_HEADER,
+                       prec_header::String = PREC_HEADER,
                        fac_header::String = FAC_HEADER,
                        scale_loadings_by_factors::Bool = true,
                        original_labels::Vector{<:AbstractString} = String[],
@@ -39,14 +40,17 @@ function prep_loadings(log_path::BeastLog, csv_path::String;
     cols, data = get_log(log_path, burnin=burnin)
 
     L_inds = findall(x -> startswith(x, L_header), cols)
-    sv_inds = findall(x -> startswith(x, sv_header), cols)
+    prec_inds = findall(x -> startswith(x, prec_header), cols)
     L_cols = cols[L_inds]
     L_data = @view data[:, L_inds]
 
-    k = k == -1 ? length(sv_inds) : k
+    p = length(prec_inds)
+    k0 = div(length(L_inds), p)
+
+    k = k == -1 ? k0 : k
     n_traits = n_traits == -1 ? k : n_traits
 
-    p, r = divrem(length(L_cols), k)
+    p, r = divrem(length(L_inds), k)
     @assert r == 0
 
     original_labels = isempty(original_labels) ?
@@ -171,12 +175,16 @@ end
 
 function prep_factors(svd_path::BeastLog, out_path::String;
                       fac_header::String = FAC_HEADER,
-                      sv_header::String = SV_HEADER,
+                      prec_header::String = PREC_HEADER,
+                      L_header::String = LOAD_HEADER,
                       k::Int = -1,
                       burnin::Float64 = 0.1)
     cols, data = get_log(svd_path, burnin = burnin)
     if k == -1
-        k = length(findall(x -> startswith(x, sv_header), cols))
+        p = length(findall(x -> startswith(x, prec_header), cols))
+        kp = length(findall(x -> startswith(x, L_header), cols))
+        k, r = divrem(kp, p)
+        @assert r == 0
     end
     fac_inds = findall(x -> startswith(x, fac_header), cols)
     fac_cols = cols[fac_inds]
