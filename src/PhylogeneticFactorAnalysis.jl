@@ -42,8 +42,6 @@ using PhylogeneticFactorAnalysis.PostProcessing
 include(joinpath(post_dir, "BEASTPostProcessing.jl"))
 using PhylogeneticFactorAnalysis.BEASTPostProcessing
 
-include(joinpath(pfa_dir, "OldPostProcessing.jl"))
-using PhylogeneticFactorAnalysis.OldPostProcessing
 
 const BEAST_HOME = "BEAST_HOME"
 
