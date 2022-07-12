@@ -88,13 +88,69 @@ function update_rotation!(rotations::Rotations, data::Array{Float64, 3},
     end
 end
 
-# ################################################################################
-# ## Signs
-# ################################################################################
+################################################################################
+## Signs
+################################################################################
 
-# struct SignRotation <: AbstractRotation
-#     dims::Vector{Int}
-#     pos_inds::Vector{Int}
-# end
+struct SignRotation <: AbstractRotation
+    dims::Vector{Int}
+end
 
-# function SignRotation(X::Matrix{Float64})
+function SignRotation(X::Matrix{Float64})
+    k = size(X, 2)
+    return SignRotation(collect(1:k))
+end
+
+function update_rotation!(rotations::Rotations, data::Array{Float64, 3},
+                          sign_rot::SignRotation)
+
+    p, k, n = size(data)
+    @unpack dims = sign_rot
+
+
+    means = zeros(p, k)
+    sum_squares = zeros(p, k)
+
+
+    for i = 1:n #not using built-in mean/var for memory efficiency w/ abs value
+        Y = rotate_sample(data, rotations, i) # TODO: buffer this?
+        for j in dims
+            for l = 1:p
+                x = abs(Y[l, j])
+                means[l, j] += x
+                sum_squares[l, j] += x * x
+            end
+        end
+    end
+
+    means ./= n
+    sum_squares ./= n
+    zs = zeros(p, k)
+    for j in dims
+        for l = 1:p
+            var = sum_squares[l, j] - means[l, j] * means[l, j]
+            z = 0.0
+            if means[l, j] > 0
+                z = means[l, j] / sqrt(var)
+            end
+            zs[l, j] = z
+        end
+    end
+
+    ref_inds = zeros(Int, k)
+    for i = 1:k
+        ref_inds[i] = findmax(@view zs[:, i])[2]
+    end
+
+    for i = 1:n
+        r = ones(k)
+        Y = rotate_sample(data, rotations, i)
+        for j in dims
+            if Y[ref_inds[j], j] < 0
+                r[j] = -1
+            end
+        end
+
+        update_rotation!(rotations, Diagonal(r), i)
+    end
+end

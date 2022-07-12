@@ -212,7 +212,7 @@ mutable struct PostProcessingOptions # instructions for post-processing
 end
 
 function PostProcessingOptions()
-    return PostProcessingOptions(RotationPlan(SVDRotation))
+    return PostProcessingOptions(RotationPlan(SVDRotation, SignRotation))
 end
 
 function ModelOptions(;
