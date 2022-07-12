@@ -67,8 +67,8 @@ end
 
 
 function update_statistics!(::Rotations, ::Array{Float64, 3},
-    ::AbstractRotation)
-return 0.0 # default is non-iterative (returns 0)
+                            ::AbstractRotation)
+    return 0.0 # default is non-iterative (returns 0)
 end
 
 include("procrustes.jl")

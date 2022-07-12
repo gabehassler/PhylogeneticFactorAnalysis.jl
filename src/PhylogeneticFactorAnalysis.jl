@@ -205,7 +205,14 @@ end
 mutable struct ModelOptions # miscellaneous modeling options
     root_sample_size::Float64
     standardize_data::Bool
+end
 
+mutable struct PostProcessingOptions # instructions for post-processing
+    rotation_plan::RotationPlan
+end
+
+function PostProcessingOptions()
+    return PostProcessingOptions(RotationPlan(SVDRotation))
 end
 
 function ModelOptions(;
@@ -226,6 +233,7 @@ mutable struct PipelineInput
     model_selection::ModelSelectionProvider
     prior::PriorParameters
     model_options::ModelOptions
+    processing_options::PostProcessingOptions
     tasks::PipelineTasks
 
     final_mcmc::MCMCOptions
@@ -245,6 +253,7 @@ mutable struct PipelineInput
                            model_selection::ModelSelectionProvider,
                            prior::PriorParameters;
                            model_options = ModelOptions(),
+                           processing_options = PostProcessingOptions(),
                            tasks::PipelineTasks = PipelineTasks(),
                            final_mcmc::MCMCOptions = MCMCOptions(chain_length = 100_000),
                            julia_seed::Int = Int(rand(UInt32)),
@@ -261,6 +270,7 @@ mutable struct PipelineInput
                    model_selection,
                    prior,
                    model_options,
+                   processing_options,
                    tasks,
                    final_mcmc,
                    julia_seed,
@@ -296,6 +306,7 @@ include("examples.jl")
 include(joinpath(pfa_dir, "logs.jl"))
 include(joinpath(plotting_dir, "plotting.jl"))
 include(joinpath(plotting_dir, "outside_pipeline.jl"))
+include(joinpath(pfa_dir, "post_processing.jl"))
 
 
 function run_pipeline(input::PipelineInput)
@@ -662,13 +673,12 @@ function process_final_logs(input::PipelineInput)
 
     for i = 1:length(log_paths)
         best_model = models[sans_extension(log_paths[i])].model
-        @unpack k, p = dimensions(input, best_model)
+        @unpack k, p, n = dimensions(input, best_model)
         @unpack rows, cols = rotation_rows_and_cols(input, best_model)
 
-        svd_logs(log_paths[i], processed_paths[i], k, p,
-                 rotate_factors = true,
-                 relevant_rows = rows,
-                 relevant_cols = cols)
+        postprocess_log(log_paths[i], processed_paths[i], k, p, n,
+                 rows, cols,
+                 input.processing_options.rotation_plan)
     end
 end
 

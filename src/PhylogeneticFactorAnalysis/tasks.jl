@@ -43,7 +43,14 @@ function start_from(s::String, input::PipelineInput)
 
     @assert all(fieldnames(typeof(tasks)) .== TASK_FIELDNAMES)
 
-    start_field = FROM_FIELDS[s]
+    start_field = ""
+    try
+        start_field = FROM_FIELDS[s]
+    catch KeyError
+        throw(ArgumentError("'$s' not found in list of possible starting points." *
+            " Options are $(keys(FROM_FIELDS))"))
+    end
+
     start_ind = findfirst(isequal(start_field), TASK_FIELDNAMES)
     for i = 1:(start_ind - 1)
         setfield!(tasks, TASK_FIELDNAMES[i], false)

@@ -88,3 +88,13 @@ function update_rotation!(rotations::Rotations, data::Array{Float64, 3},
     end
 end
 
+# ################################################################################
+# ## Signs
+# ################################################################################
+
+# struct SignRotation <: AbstractRotation
+#     dims::Vector{Int}
+#     pos_inds::Vector{Int}
+# end
+
+# function SignRotation(X::Matrix{Float64})

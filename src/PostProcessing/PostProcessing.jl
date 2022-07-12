@@ -43,13 +43,21 @@ abstract type AbstractTransformer end
 
 
 struct RotationPlan
-    transformers::Tuple{<:Type{<:AbstractTransformer}, N} where N
+    transformers::Vector{DataType}
+
+    function RotationPlan(transformers::Vector{DataType})
+        for t in transformers
+            if !(t <: AbstractTransformer)
+                throw(ArgumentError("$t is not an valid transformer"))
+            end
+        end
+        return new(transformers)
+    end
 end
 
 function RotationPlan(transformers::Type{<:AbstractTransformer}...)
-    return RotationPlan(transformers)
+    return RotationPlan([t for t in transformers])
 end
-
 
 
 function do_rotations!(r::RotationPlan, X::Array{Float64, 3}, reference_ind::Int)

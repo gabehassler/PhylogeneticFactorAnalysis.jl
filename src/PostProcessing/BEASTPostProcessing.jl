@@ -128,17 +128,25 @@ function rotate_other_parameters!(F::Array{Float64, 3}, C::Array{Float64, 3},
     end
 
     other_dims = setdiff(1:joint_dim, model_dims)
-    V_sub = V[other_dims, model_dims, :]
-    V_sub = apply_inverse(V_sub, rotations, transpose = true)
 
-    for i = 1:size(V, 3)
-        Vr = @view V_sub[:, :, i]
-        V[other_dims, model_dims, i] .= Vr
-        V[model_dims, other_dims, i] .= Vr'
+    if size(V, 1) > 0
+        V_sub = V[other_dims, model_dims, :]
+        V_sub = apply_inverse(V_sub, rotations, transpose = true)
+
+        for i = 1:size(V, 3)
+            Vr = @view V_sub[:, :, i]
+            V[other_dims, model_dims, i] .= Vr
+            V[model_dims, other_dims, i] .= Vr'
+            if size(C, 1) > 0
+                C[:, :, i] .= cov2corr(V[:, :, i]) #TOCO: just update correlation
+            end
+        end
+    else
         if size(C, 1) > 0
-            C[:, :, i] .= cov2corr(V[:, :, i])
+            error("not implemented when correlation is present but no variance")
         end
     end
+
 end
 
 
@@ -149,7 +157,12 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
         double_check::Bool = false,
         optimization::Union{Nothing, Function} = nothing,
         variance_header::AbstractString = "mbd.variance",
-        correlation_header::AbstractString = "correlation.")
+        correlation_header::AbstractString = "correlation.",
+        L_header::AbstractString = "$(parameters.trait_names[model]).$L_HEADER",
+        F_header::AbstractString = parameters.joint_name,
+        prec_header = "$(parameters.trait_names[model]).factorPrecision",
+        prop_header = "$(parameters.trait_names[model]).proportion"
+        )
     dim_factor = parameters.tree_dims[model]
     dim_trait = parameters.data_dims[model]
     dim_joint = sum(parameters.tree_dims)
@@ -157,29 +170,36 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
     joint_name = parameters.joint_name
     n_taxa = parameters.n_taxa
 
-    L, L_labels = collect_matrix(df, "$trait_name.$L_HEADER", dim_trait, dim_factor)
-    F, F_labels = collect_matrix(df, joint_name, dim_joint, n_taxa,
+    L, L_labels = collect_matrix(df, L_header, dim_trait, dim_factor)
+    F, F_labels = collect_matrix(df, F_header, dim_joint, n_taxa,
                             transpose = true)
     C, C_labels = collect_matrix(df, correlation_header, dim_joint, dim_joint)
     V, V_labels = collect_matrix(df, variance_header, dim_joint, dim_joint)
-    if (size(C)[1:2] != (dim_joint, dim_joint) ||
-        size(V)[1:2] != (dim_joint, dim_joint))
-
+    C_dims = size(C)[1:2]
+    if !(C_dims == (dim_joint,dim_joint) || C_dims == (0, 0))
         error("Correlation matrix with header $correlation_header has size " *
-              "$(size(C)[1:2]) while variance matrix with header " *
-              "$variance_header has size $(size(V)[1:2])")
+              "$C_dims. Should be ($dim_joint, $dim_joint)")
     end
-    @assert size(C)[1:2] == size(V)[1:2] == (dim_joint, dim_joint)
+    V_dims = size(V)[1:2]
+    if !(V_dims == (dim_joint,dim_joint) || V_dims == (0, 0))
+        error("Variance matrix with header $variance_header has size " *
+              "$V_dims. Should be ($dim_joint, $dim_joint)")
+    end
+    if C_dims == (0, 0) || V_dims == (0, 0)
+        @warn "Could not find either correlation or variance matrix for " *
+              "post-processing. If this is a standard latent factor model " *
+              "then this is expected. If the variance is not fixed to the " *
+              "identity, then the output variance/correlation will not be " *
+              "post-processed."
+    end
 
 
-    prec_header = "$trait_name.factorPrecision"
     prec_df = subset_startswith(df, prec_header)
     prec = Matrix(prec_df)'
     prec_labels = names(prec_df)
     @assert length(prec_labels) == dim_trait
 
 
-    prop_header = "$trait_name.proportion"
     prop_df = subset_startswith(df, prop_header)
     @assert size(prop_df, 2) == 2 + dim_factor * 2
 
