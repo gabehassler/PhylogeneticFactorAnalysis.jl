@@ -14,6 +14,11 @@ function parse_pfa(node::EzXML.Node, xml_directory::String)
     julia_seed = attr(node, JULIA_SEED, Int, default=rand(UInt32))
     beast_seed = attr(node, BEAST_SEED, Int, default=rand(UInt32))
 
+    procrustes = attr(node, PROCRUSTES, Bool, default=false)
+    rotation_plan = procrustes ? RotationPlan(SVDRotation, ProcrustesRotation) :
+                                 RotationPlan(SVDRotation, SignRotation)
+    processing_options = PostProcessingOptions(rotation_plan)
+
     directory = abspath(attr(node, DIRECTORY, String, default= pwd()))
     alternative_directories = [directory, xml_directory]
 
@@ -65,6 +70,7 @@ function parse_pfa(node::EzXML.Node, xml_directory::String)
 
     return PipelineInput(nm, data, model_selection, prior,
                          model_options = model_options,
+                         processing_options = processing_options,
                          tasks = tasks,
                          julia_seed = julia_seed,
                          beast_seed = beast_seed,
@@ -150,6 +156,8 @@ const LABELS = "traitLabels"
 const CLASSIFICATION = "taxonClassification"
 
 const SEQUENCE_XML = "sequenceXML"
+
+const PROCRUSTES = "procrustes"
 
 const KEYS = Dict{String, Vector{Pair{String, Symbol}}}(
     PFA =>
