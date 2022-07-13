@@ -21,6 +21,9 @@ end
 function update_rotation!(rotations::Rotations, data::Array{Float64, 3},
                           procrustes::ProcrustesRotation)
     p, k, n = size(data)
+    if (procrustes.dims != 1:k)
+        error("not yet impleneted")
+    end
 
     for i = 1:n
         R = view_rotation(rotations, i)
@@ -153,4 +156,92 @@ function update_rotation!(rotations::Rotations, data::Array{Float64, 3},
 
         update_rotation!(rotations, Diagonal(r), i)
     end
+end
+
+
+################################################################################
+## Permutations
+################################################################################
+
+struct Permutation <: AbstractRotation
+    reference::AbstractArray{Float64, 2}
+    dims::Vector{Int}
+end
+
+function Permutation(data::AbstractArray{Float64, 2})
+    k = size(data, 2)
+    return Permutation(data, collect(1:k))
+end
+
+function update_rotation!(rotations::Rotations, data::Array{Float64, 3},
+                          permutation::Permutation)
+    p, k, n = size(data)
+    @unpack reference, dims = permutation
+    if dims != 1:k
+        error("not yet implemented")
+    end
+    perms = permutations(dims)
+    best_perm = zeros(Int, k)
+    best_signs = zeros(k)
+    signs = zeros(Int, k)
+
+    for i = 1:n
+        R = view_rotation(rotations, i)
+        Y = @view data[:, :, i]
+        Yr = Y * R # TODO: cache
+
+        min_dist = Inf
+        fill!(best_perm, 0)
+        fill!(best_signs, 0)
+
+        for perm in perms
+            dist = 0.0
+            for j = 1:k
+                yj = @view Yr[:, perm[j]]
+                rj = @view reference[:, j]
+
+                diff_pos = rj - yj
+                diff_neg = rj + yj
+                dist_pos = dot(diff_pos, diff_pos)
+                dist_neg = dot(diff_neg, diff_neg)
+                if dist_pos > dist_neg # negative is closer
+                    dist += dist_neg
+                    signs[j] = -1
+                else
+                    dist += dist_pos
+                    signs[j] = 1
+                end
+            end
+            if dist < min_dist
+                best_perm .= perm
+                best_signs .= signs
+                min_dist = dist
+            end
+
+        end
+
+
+
+        P = Diagonal(ones(k))[:, best_perm] * Diagonal(best_signs)
+        update_rotation!(rotations, P, i)
+    end
+end
+
+#TODO: avoid code duplication (this is the exact same function as for ProcrustesRotation)
+function update_statistics!(rotations::Rotations, data::Array{Float64, 3},
+                            permutation::Permutation)
+    p, k, n = size(data)
+
+    Y_bar = zeros(p, k)
+
+    for i = 1:n
+        Y_bar .+=  rotate_sample(data, rotations, i) # TODO: use cache
+    end
+
+    Y_bar ./= n
+
+    diff = absmax(Y_bar - permutation.reference)
+    permutation.reference .= Y_bar
+
+    return diff
 end

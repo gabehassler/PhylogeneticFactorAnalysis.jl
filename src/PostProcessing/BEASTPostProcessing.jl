@@ -65,7 +65,7 @@ function collect_matrix(df::DataFrame, header::String, n_rows::Int, n_cols::Int;
     final_rows, final_cols = transpose ? (n_cols, n_rows) : (n_rows, n_cols)
 
     data = zeros(final_rows, final_cols, n_states)
-    M = Matrix(df_sub)
+    M = Matrix{Float64}(df_sub)
     for i = 1:n_states
         X = reshape(M[i, :], n_rows, n_cols)
         data[:, :, i] .= transpose ? X' : X
@@ -153,7 +153,7 @@ end
 function rotate_submodel!(df::DataFrame, parameters::JointParameters,
         plan::RotationPlan,
         model::Int;
-        map_ind::Int = 1,
+        map_ind::Int = 0,
         double_check::Bool = false,
         optimization::Union{Nothing, Function} = nothing,
         variance_header::AbstractString = "mbd.variance",
@@ -261,6 +261,7 @@ function rotate_multi_sem(log_path::String, rotate_path::String,
         plan::RotationPlan, parameters::JointParameters;
         burnin::Float64 = 0.0,
         minimum_map::Float64 = max(0.1 - burnin, 0.0),
+        use_map::Bool = true,
         kw_args...)
 
     @unpack tree_dims, data_dims = parameters
@@ -270,8 +271,11 @@ function rotate_multi_sem(log_path::String, rotate_path::String,
     df = import_log(log_path, burnin=burnin)
     n = size(df, 1)
 
-    map_offset = Int(round(n * minimum_map))
-    map_ind = findmax(df.joint[(map_offset + 1):end])[2] + map_offset
+    map_ind = 0
+    if use_map
+        map_offset = Int(round(n * minimum_map))
+        map_ind = findmax(df.joint[(map_offset + 1):end])[2] + map_offset
+    end
 
 
     for i = 1:m
@@ -281,6 +285,7 @@ function rotate_multi_sem(log_path::String, rotate_path::String,
         end
     end
     CSV.write(rotate_path, df, delim = '\t')
+    df = nothing
 end
 
 function post_process(log_path::String,
@@ -291,6 +296,7 @@ function post_process(log_path::String,
                       rotation_plan = RotationPlan(SVDRotation,
                                                    ProcrustesRotation),
                       joint_name::String = "",
+                      use_map::Bool = true, # MAP = maximum a posteriori estimate
                       kwargs...
                       )
 
@@ -308,7 +314,8 @@ function post_process(log_path::String,
            rotation_plan,
            params,
            double_check = true,
-           optimization = optimization;
+           optimization = optimization,
+           use_map = use_map;
            kwargs...)
     return nothing
 end

@@ -65,6 +65,10 @@ function compute_transform!(t::Type{<:AbstractRotation}, X::Array{Float64, 3},
     return rotate!(X, t(X[:, :, reference_ind]))
 end
 
+function compute_transform!(t::Type{<:AbstractRotation}, X::Array{Float64, 3})
+    return rotate!(X, t(mean(X, dims=3)[:, :, 1]))
+end
+
 
 function update_statistics!(::Rotations, ::Array{Float64, 3},
                             ::AbstractRotation)

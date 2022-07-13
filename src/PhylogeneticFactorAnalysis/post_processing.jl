@@ -13,5 +13,6 @@ function postprocess_log(input::AbstractString, output::AbstractString,
                                      prec_header = "factorPrecision",
                                      F_header = "factors.",
                                      L_header = "L",
-                                     prop_header = "factorProportion")
+                                     prop_header = "factorProportion",
+                                     use_map=false)
 end

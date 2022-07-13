@@ -10,6 +10,7 @@ export cluster,
        rotate!,
        Rotations,
        ProcrustesRotation,
+       Permutation,
        SVDRotation,
        SignRotation,
        apply_transform,
@@ -65,7 +66,8 @@ function do_rotations!(r::RotationPlan, X::Array{Float64, 3}, reference_ind::Int
     n = length(r.transformers)
     rs = Vector{Transform}(undef, n)
     for i = 1:n
-        rs[i] = compute_transform!(r.transformers[i], X, reference_ind)
+        rs[i] = reference_ind == 0 ? compute_transform!(r.transformers[i], X) :
+                compute_transform!(r.transformers[i], X, reference_ind)
     end
     return compose(rs...)
 end

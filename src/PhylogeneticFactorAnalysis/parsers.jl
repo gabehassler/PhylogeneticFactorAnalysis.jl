@@ -14,9 +14,18 @@ function parse_pfa(node::EzXML.Node, xml_directory::String)
     julia_seed = attr(node, JULIA_SEED, Int, default=rand(UInt32))
     beast_seed = attr(node, BEAST_SEED, Int, default=rand(UInt32))
 
-    procrustes = attr(node, PROCRUSTES, Bool, default=false)
-    rotation_plan = procrustes ? RotationPlan(SVDRotation, ProcrustesRotation) :
-                                 RotationPlan(SVDRotation, SignRotation)
+    postprocessing = attr(node, POSTPROCESSING, String, default=SVD)
+    rotation_plan = nothing
+    if postprocessing == SVD
+        rotation_plan = RotationPlan(SVDRotation, SignRotation)
+    elseif postprocessing == PROCRUSTES
+        rotation_plan = RotationPlan(SVDRotation, ProcrustesRotation)
+    elseif postprocessing == PERMUTATION
+        rotation_plan = RotationPlan(SVDRotation, Permutation)
+    else
+        error("unrecognized '$POSTPROCESSING' value: '$postprocessing'")
+    end
+
     processing_options = PostProcessingOptions(rotation_plan)
 
     directory = abspath(attr(node, DIRECTORY, String, default= pwd()))
@@ -158,6 +167,9 @@ const CLASSIFICATION = "taxonClassification"
 const SEQUENCE_XML = "sequenceXML"
 
 const PROCRUSTES = "procrustes"
+const PERMUTATION = "permutation"
+const SVD = "svd"
+const POSTPROCESSING = "postprocessing"
 
 const KEYS = Dict{String, Vector{Pair{String, Symbol}}}(
     PFA =>
