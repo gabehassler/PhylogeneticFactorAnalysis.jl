@@ -42,14 +42,22 @@ fac_colors <- custom_color_scale(sRGB(1, 0, 0), sRGB(1, 1, 1), sRGB(0, 0, 1), f2
 ## Loadings plot
 
 plot_loadings <- function(csv_path, plot_name, labels_path = NA, factors = NA,
-                          height_scale=1.0, width_scale=1.0){
+                          height_scale=1.0, width_scale=1.0,
+                          verbose = FALSE){
+
+  if (verbose) {print("Starting loadings plot")}
+  if (verbose) {print("Reading data")}
+
   df  <- read.csv(csv_path, header=TRUE, encoding="UTF-8")
   if (!all(is.na(factors))) {
+    if (verbose) {print("Subsetting factors")}
     df <- df[df$factor %in% factors,]
   }
 
   trait_levs <- unique(df$trait)
   trait_labels <- c()
+
+  if (verbose) {print("X")}
 
   if (!is.na(labels_path)) {
     labels_df <- read.csv(labels_path, header=TRUE, fileEncoding="UTF-8-BOM")
