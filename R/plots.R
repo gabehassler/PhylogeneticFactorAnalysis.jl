@@ -43,7 +43,8 @@ fac_colors <- custom_color_scale(sRGB(1, 0, 0), sRGB(1, 1, 1), sRGB(0, 0, 1), f2
 
 plot_loadings <- function(csv_path, plot_name, labels_path = NA, factors = NA,
                           height_scale=1.0, width_scale=1.0,
-                          verbose = FALSE){
+                          verbose = FALSE,
+                          lims = NA){
 
   if (verbose) {print("Starting loadings plot")}
   if (verbose) {print("Reading data")}
@@ -110,7 +111,10 @@ plot_loadings <- function(csv_path, plot_name, labels_path = NA, factors = NA,
   df$sign <- factor(df$sign, levels=c(1,0, -1))
   ymin = min(df$hpdl)
   ymax = max(df$hpdu)
-  absmax = max(abs(ymin), abs(ymax))
+  if (is.na(lims)) {
+      absmax = max(abs(ymin), abs(ymax))
+      lims <- c(-absmax, absmax)
+  }
 
   k <- max(df$factor)
   facet_labels <- character(k)
@@ -152,7 +156,7 @@ plot_loadings <- function(csv_path, plot_name, labels_path = NA, factors = NA,
       panel.grid.minor.x = element_blank()
       # legend.position = "none"
     ) +
-    xlim(-absmax, absmax) +
+    xlim(lims) +
     facet_grid(rows=vars(cat),
                cols=vars(factor),
                labeller = labeller(factor=facet_labels),
