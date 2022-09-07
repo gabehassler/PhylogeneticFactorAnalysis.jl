@@ -33,7 +33,8 @@ const ONLY_FIELDS = Dict{String, Vector{Symbol}}(
                                                   :run_selection_xml,
                                                   :record_selection_stats],
                             "prepare_final_xml" => [:record_selection_stats,
-                                                    :make_final_xml]
+                                                    :make_final_xml],
+                            "process_final" => [:make_final_xml, :process_final_log]
                                                 )
 
 
