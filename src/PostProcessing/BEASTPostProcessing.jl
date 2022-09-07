@@ -155,7 +155,7 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
         model::Int;
         map_ind::Int = 0,
         double_check::Bool = false,
-        optimization::Union{Nothing, Function} = nothing,
+        optimization_inds::Vector{Vector{Int}},
         variance_header::AbstractString = "mbd.variance",
         correlation_header::AbstractString = "correlation.",
         L_header::AbstractString = "$(parameters.trait_names[model]).$L_HEADER",
@@ -197,7 +197,9 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
     prec_df = subset_startswith(df, prec_header)
     prec = Matrix(prec_df)'
     prec_labels = names(prec_df)
-    @assert length(prec_labels) == dim_trait
+    if length(prec_labels) != dim_trait
+        error("Unknown trait dimension. $(length(prec_labels)) based on parsing the log file, but $dim_trait supplied")
+    end
 
 
     prop_df = subset_startswith(df, prop_header)
@@ -215,12 +217,24 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
 
     n = size(C, 3)
 
-    if !isnothing(optimization)
+    if !isempty(optimization_inds[model])
+        if !isempty(intersect(abs.(optimization_inds[model]),  model_inds))
+            error("cannot optimize correlation within a model")
+        end
+
         if count(parameters.tree_dims .!= parameters.data_dims) > 1
             @warn "optimization with multiple factor models has not been tested"
         end
-        C_sub = C[model_inds, other_inds, :]
-        R = PostProcessing.optimize_one_trait(C_sub, optimization)
+        C_sub = C[model_inds, abs.(optimization_inds[model]), :]
+        c = zeros(dim_factor, n)
+        signs = sign.(optimization_inds[model])
+        @show size(C_sub)
+        @show signs
+        for i = 1:n
+            c[:, i] .= C_sub[:, :, i] * signs
+        end
+
+        R = PostProcessing.optimize_one_trait(c)
         R = R'
         optimized_rotation = zeros(dim_factor, dim_factor, n) # TODO: don't need to repeat same matrix over and over
         for i = 1:n
@@ -292,7 +306,7 @@ function post_process(log_path::String,
                       rotated_path::String,
                       traits::Vector{Pair{String, Tuple{Int, Int}}},
                       n_taxa::Int;
-                      optimize::Bool = false,
+                      optimization_inds::Vector{Vector{Int}} = fill(Int[], length(traits)),
                       rotation_plan = RotationPlan(SVDRotation,
                                                    ProcrustesRotation),
                       joint_name::String = "",
@@ -308,14 +322,13 @@ function post_process(log_path::String,
 
     params = JointParameters(tree_dims, data_dims, trait_names, joint_name, n_taxa)
 
-    optimization = optimize ? PostProcessing.maximum_correlation : nothing
 
     rotate_multi_sem(log_path, rotated_path,
            rotation_plan,
            params,
            double_check = true,
-           optimization = optimization,
            use_map = use_map;
+           optimization_inds = optimization_inds,
            kwargs...)
     return nothing
 end

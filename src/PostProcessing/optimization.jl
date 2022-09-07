@@ -132,11 +132,9 @@ function optimize(C::Array{Float64, 3}, f::Function; kwargs...)
     error("Not implemented for k = $k")
 end
 
-function optimize_one_trait(C::Array{Float64, 3}, f::Function; kwargs...)
+function optimize_one_trait(C::Array{Float64, 2}; kwargs...)
     @warn "Ignoring provided optimization function"
-    @assert size(C, 2) == 1
-    c = C[:, 1, :]
-    c_mean = mean(c, dims=2)
+    c_mean = mean(C, dims=2)
     k = length(c_mean)
 
     R = zeros(k, k)

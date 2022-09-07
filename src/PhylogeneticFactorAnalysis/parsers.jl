@@ -21,7 +21,7 @@ function parse_pfa(node::EzXML.Node, xml_directory::String)
     elseif postprocessing == PROCRUSTES
         rotation_plan = RotationPlan(SVDRotation, ProcrustesRotation)
     elseif postprocessing == PERMUTATION
-        rotation_plan = RotationPlan(SVDRotation, Permutation)
+        rotation_plan = RotationPlan(SVDRotation, SignRotation, Permutation)
     else
         error("unrecognized '$POSTPROCESSING' value: '$postprocessing'")
     end
