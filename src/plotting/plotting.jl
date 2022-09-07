@@ -45,9 +45,11 @@ function prep_loadings(log_path::BeastLog, csv_path::String;
     L_data = @view data[:, L_inds]
 
     p = length(prec_inds)
-    k0 = div(length(L_inds), p)
+    if p == 0 && k == -1
+        error("cannot determine trait dimension")
+    end
 
-    k = k == -1 ? k0 : k
+    k = k == -1 ? div(length(L_inds), p) : k
     n_traits = n_traits == -1 ? k : n_traits
 
     p, r = divrem(length(L_inds), k)
@@ -223,7 +225,7 @@ function prep_factors(svd_path::BeastLog, out_path::String;
 end
 
 function prep_optional_arguments(x::Array)
-    return [isempty(y) ? missing : y for y in x]
+    return Any[isempty(y) ? missing : y for y in x]
 end
 
 function factor_plot(args...; kwargs...)
@@ -238,7 +240,9 @@ function prep_r_factors(plot_path::String, stats_path::String, tree_path::String
                      tip_labels::Bool = true,
                      line_width::Real = 1.0,
                      include_only::AbstractArray{<:AbstractString} = String[],
-                     relabel::DataFrame = DataFrame()
+                     relabel::DataFrame = DataFrame(),
+                     width::Real = 20.0,
+                     height::Real = 0.0
                      )
     @rput plot_path
     @rput stats_path
@@ -252,12 +256,15 @@ function prep_r_factors(plot_path::String, stats_path::String, tree_path::String
     @rput class_array
 
     optional_arguments = prep_optional_arguments([fac_names, include_only, relabel])
+    height_arg = height == 0.0 ? missing : height
+    push!(optional_arguments, height_arg)
     @rput optional_arguments
 
 
     @rput layout
     @rput tip_labels
     @rput line_width
+    @rput width
 end
 
 function run_r_factors()
@@ -268,12 +275,15 @@ function run_r_factors()
     fac_names <- optional_arguments[[1]]
     include_only <- optional_arguments[[2]]
     relabel <- optional_arguments[[3]]
+    height <- optional_arguments[[4]]
 
 
     plot_factor_tree(plot_path, tree_path, stats_path, class_path=class_array[[1]],
                      fac_names = fac_names, layout = layout,
                      tip_labels = tip_labels, line_width = line_width,
-                     include_only = include_only, relabel = relabel)
+                     include_only = include_only, relabel = relabel,
+                     width = width,
+                     height = height)
     """
 end
 
@@ -287,6 +297,8 @@ function factor_prep_and_plot(plot_path::String, log_path::BeastLog,
                               line_width::Real = 1.0,
                               include_only::AbstractArray{<:AbstractString} = String[],
                               relabel::DataFrame = DataFrame(),
+                              width::Real = 20.0,
+                              height::Real = 0.0,
                               kwargs...)
     if !(check_stats && isfile(stats_path))
         prep_factors(log_path, stats_path; kwargs...)
@@ -297,6 +309,8 @@ function factor_prep_and_plot(plot_path::String, log_path::BeastLog,
                 tip_labels = tip_labels,
                 line_width = line_width,
                 include_only = include_only,
-                relabel = relabel)
+                relabel = relabel,
+                width = width,
+                height = height)
 end
 

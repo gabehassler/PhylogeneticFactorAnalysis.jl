@@ -2,6 +2,7 @@ function plot_loadings(plot_paths::Vector{String},
                        log_path::BeastLog,
                        trait_names::Vector{String},
                        trait_dims::Vector{Int};
+                       original_labels::Vector{<:Vector{<:AbstractString}} = Vector{String}[],
                        factor_partitions::AbstractVector{Int} = 1:(length(plot_paths)),
                        kwargs...)
 
@@ -11,10 +12,13 @@ function plot_loadings(plot_paths::Vector{String},
     n_traits = sum(trait_dims)
     for i in factor_partitions
         trait_name = trait_names[i]
+        labels = isempty(original_labels) ? String[] : original_labels[i]
         plot_loadings(plot_paths[i], log_path,
               L_header = "$trait_name.L.", fac_header = joint_name,
+              prec_header = "$trait_name.factorPrecision",
               k = trait_dims[i], n_traits = n_traits,
-              offset = offset;
+              offset = offset,
+              original_labels = labels;
               kwargs...)
         offset += trait_dims[i]
     end
@@ -98,16 +102,21 @@ function plot_correlation(path::String,
                           corrs::Matrix{Float64},
                           hpdl::Matrix{Float64},
                           hpdu::Matrix{Float64},
-                          labels::Vector{String})
+                          labels::Vector{String};
+                          width::Real = 1 + 0.75 * size(corrs, 1))
 
     @rput corrs
     @rput hpdl
     @rput hpdu
     @rput labels
     @rput path
+    @rput width
 
     R"""
     library(corrplot)
+    library(wesanderson)
+    wpal <- wes_palette("Royal1")
+    pal <- c(wpal[1], "white", wpal[2])
     rownames(corrs) <- labels
     colnames(corrs) <- labels
     rownames(hpdl) <- labels
@@ -115,20 +124,22 @@ function plot_correlation(path::String,
     rownames(hpdu) <- labels
     colnames(hpdu) <- labels
 
-    pdf(path)
-    corrplot(corrs, low=hpdl, upp=hpdu, plot="rect")
+    pdf(path, width=width, height=width)
+    corrplot(corrs, low=hpdl, upp=hpdu, plot="rect", type="upper", diag=FALSE,
+             tl.col="black",
+             col=colorRampPalette(pal)(200))
     dev.off()
     """
 end
 
-function plot_correlation(bn::String, labels::Vector{String})
+function plot_correlation(bn::String, labels::Vector{String}; kwargs...)
     return plot_correlation("$bn.log", "$bn.pdf", labels)
 end
 
-function plot_correlation(log_path::BeastLog, plot_path::String, labels::Vector{String})
+function plot_correlation(log_path::BeastLog, plot_path::String, labels::Vector{String}; kwargs...)
     @unpack C = process_variance(log_path)
     @unpack μ, hpdl, hpdu = C
-    plot_correlation(plot_path, μ, hpdu, hpdl, labels)
+    plot_correlation(plot_path, μ, hpdu, hpdl, labels; kwargs...)
 end
 
 
