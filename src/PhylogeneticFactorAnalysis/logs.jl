@@ -7,11 +7,16 @@ function process_log(log_path::String; kw_args...)
     n = size(df, 1)
     nms = names(df)
 
-    sv_inds = find_starts(nms, SV_HEADER)
-    k = length(sv_inds)
+    # sv_inds = find_starts(nms, SV_HEADER)
+    # k = length(sv_inds)
 
     L_inds = find_starts(nms, L_HEADER)
-    p = div(length(L_inds), k)
+
+    prec_inds = find_starts(nms, PREC_HEADER)
+    p = length(prec_inds)
+
+
+    k = div(length(L_inds), p)
     L = zeros(p, k, n)
 
     F_inds = find_starts(nms, FAC_HEADER)
