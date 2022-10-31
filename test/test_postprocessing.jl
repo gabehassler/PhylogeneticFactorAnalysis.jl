@@ -141,7 +141,7 @@ n_taxa = 20
 post_process(log_path, rotated_path, dims, n_taxa)
 @test check_valid_rotation(log_path, rotated_path, dims, n_taxa)
 
-post_process(log_path, rotated_path, dims, n_taxa, optimize=true)
+post_process(log_path, rotated_path, dims, n_taxa, optimization_inds=[[4]])
 @test check_valid_rotation(log_path, rotated_path, dims, n_taxa)
 
 # post_process(log_path, rotated_path, dims, n_taxa,
