@@ -24,36 +24,50 @@ function update_rotation!(r::Rotations, R::AbstractMatrix{Float64}, n::Int)
     r.rotations[:, :, n] .= r.rotations[:, :, n] * R
 end
 
-function rotate_sample(data::AbstractArray{Float64, 3}, r::Rotations, n::Int)
+function rotate_sample(data::AbstractArray{Float64, 3}, r::Rotations, n::Int;
+                       side::Symbol = :right, inverse::Bool = false)
     R = view_rotation(r, n)
+    if inverse
+        R = R'
+    end
     Y = @view data[:, :, n]
+    if side == :right
+        return Y * R
+    elseif side == :left
+        return R * Y
+    elseif side == :both
+        return R' * Y * R
+    else
+        error("unrecognized 'side' keyword argument: $side.  Must be :right, :left, or :both.")
+    end
     return Y * R
 end
 
-function apply_transform(data::Array{Float64, 3}, rotations::Rotations)
+function apply_transform(data::Array{Float64, 3}, rotations::Rotations;
+                         side::Symbol = :right, inverse::Bool = false)
     new_data = zeros(size(data)...)
     for i = 1:size(data, 3)
-        new_data[:, :, i] = rotate_sample(data, rotations, i)
+        new_data[:, :, i] = rotate_sample(data, rotations, i, side = side, inverse = inverse)
     end
     return new_data
 end
 
-function apply_inverse(data::Array{Float64, 3}, rotations::Rotations;
-                           transpose::Bool = false)
+# function apply_inverse(data::Array{Float64, 3}, rotations::Rotations;
+#                            transpose::Bool = false)
 
-    if transpose
-        return apply_transform(data, rotations) # R' = inv(R) for rotation matrices
-    else
-        p, k, n = size(data)
-        new_data = zeros(p, k, n)
-        for i = 1:n
-            Y = @view data[:, :, i]
-            new_data[:, :, i] .= Y * view_rotation(rotations, i)'
-        end
+#     if transpose
+#         return apply_transform(data, rotations) # R' = inv(R) for rotation matrices
+#     else
+#         p, k, n = size(data)
+#         new_data = zeros(p, k, n)
+#         for i = 1:n
+#             Y = @view data[:, :, i]
+#             new_data[:, :, i] .= Y * view_rotation(rotations, i)'
+#         end
 
-        return new_data
-    end
-end
+#         return new_data
+#     end
+# end
 
 abstract type AbstractRotation <: AbstractTransformer end
 # interface:

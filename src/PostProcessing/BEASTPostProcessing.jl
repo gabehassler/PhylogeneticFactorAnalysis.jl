@@ -114,40 +114,59 @@ function transpose_samples(X::Array{Float64, 3})
 end
 
 
+function rotate_other_parameters!(matrices::Vector{Array{Float64, 3}},
+                                  rotations::Rotations,
+                                  inverses::Vector{Bool},
+                                  sides::Vector{Symbol},
+                                  expand::Vector{Bool},
+                                  model_dims::AbstractVector{Int},
+                                  joint_dim::Int)
 
-
-
-function rotate_other_parameters!(F::Array{Float64, 3}, C::Array{Float64, 3},
-                                  V::Array{Float64, 3}, rotations::Rotations,
-                                  model_dims::AbstractVector{Int}, joint_dim::Int)
-
-    expanded_rotation = expand_rotation(rotations, model_dims, joint_dim)
-
-    if size(F, 1) > 0
-        F .= apply_inverse(F, expanded_rotation, transpose = true)
-    end
-
-    other_dims = setdiff(1:joint_dim, model_dims)
-
-    if size(V, 1) > 0
-        V_sub = V[other_dims, model_dims, :]
-        V_sub = apply_inverse(V_sub, rotations, transpose = true)
-
-        for i = 1:size(V, 3)
-            Vr = @view V_sub[:, :, i]
-            V[other_dims, model_dims, i] .= Vr
-            V[model_dims, other_dims, i] .= Vr'
-            if size(C, 1) > 0
-                C[:, :, i] .= cov2corr(V[:, :, i]) #TOCO: just update correlation
-            end
-        end
-    else
-        if size(C, 1) > 0
-            error("not implemented when correlation is present but no variance")
+    expanded_rotations = expand_rotation(rotations, model_dims, joint_dim)
+    n = length(matrices)
+    for i = 1:n
+        if minimum(size(matrices[i])) > 0
+            rotation = expand[i] ? expanded_rotations : rotations
+            matrices[i] .= apply_transform(matrices[i], rotation, side = sides[i], inverse = inverses[i])
         end
     end
-
 end
+
+
+
+
+
+# function rotate_other_parameters!(F::Array{Float64, 3}, C::Array{Float64, 3},
+#                                   V::Array{Float64, 3}, rotations::Rotations,
+#                                   model_dims::AbstractVector{Int}, joint_dim::Int)
+
+#     expanded_rotation = expand_rotation(rotations, model_dims, joint_dim)
+
+#     if size(F, 1) > 0
+#         F .= apply_inverse(F, expanded_rotation, transpose = true)
+#     end
+
+#     other_dims = setdiff(1:joint_dim, model_dims)
+
+#     if size(V, 1) > 0
+#         V_sub = V[other_dims, model_dims, :]
+#         V_sub = apply_inverse(V_sub, rotations, transpose = true)
+
+#         for i = 1:size(V, 3)
+#             Vr = @view V_sub[:, :, i]
+#             V[other_dims, model_dims, i] .= Vr
+#             V[model_dims, other_dims, i] .= Vr'
+#             if size(C, 1) > 0
+#                 C[:, :, i] .= cov2corr(V[:, :, i]) #TOCO: just update correlation
+#             end
+#         end
+#     else
+#         if size(C, 1) > 0
+#             error("not implemented when correlation is present but no variance")
+#         end
+#     end
+
+# end
 
 
 function rotate_submodel!(df::DataFrame, parameters::JointParameters,
@@ -161,7 +180,8 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
         L_header::AbstractString = "$(parameters.trait_names[model]).$L_HEADER",
         F_header::AbstractString = parameters.joint_name,
         prec_header = "$(parameters.trait_names[model]).factorPrecision",
-        prop_header = "$(parameters.trait_names[model]).proportion"
+        prop_header = "$(parameters.trait_names[model]).proportion",
+        resvar_header = "$(parameters.trait_names[model]).variance"
         )
     dim_factor = parameters.tree_dims[model]
     dim_trait = parameters.data_dims[model]
@@ -193,6 +213,8 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
               "post-processed."
     end
 
+    Vr, Vr_labels = collect_matrix(df, resvar_header, dim_factor, dim_factor)
+
 
     prec_df = subset_startswith(df, prec_header)
     prec = Matrix(prec_df)'
@@ -212,7 +234,11 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
     model_inds = (offset + 1):(offset + dim_factor)
     other_inds = setdiff(1:dim_joint, model_inds)
 
-    rotate_other_parameters!(F, C, V, final_rotation, model_inds, dim_joint)
+    rotate_other_parameters!([F, C, V, Vr], final_rotation,
+                             [false, false, false, false],
+                             [:right, :both, :both, :both],
+                             [true, true, true, false],
+                             model_inds, dim_joint)
 
 
     n = size(C, 3)
@@ -244,7 +270,11 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
         optimized_rotation = Rotations(optimized_rotation)
 
         L = apply_transform(L, optimized_rotation)
-        rotate_other_parameters!(F, C, V, optimized_rotation, model_inds, dim_joint)
+        rotate_other_parameters!([F, C, V, Vr], optimized_rotation,
+                                 [false, false, false, false],
+                                 [:right, :both, :both, :both],
+                                 [true, true, true, false],
+                                 model_inds, dim_joint)
     end
 
     F_model = @view F[:, model_inds, :]
@@ -255,7 +285,7 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
 
     update_df!(df,
              [L_labels => L, F_labels => F, C_labels => C,
-             V_labels => V, prop_labels => props']
+             V_labels => V, Vr_labels => Vr, prop_labels => props']
             )
 end
 
