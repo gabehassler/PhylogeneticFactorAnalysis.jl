@@ -50,6 +50,20 @@ function parse_pfa(node::EzXML.Node, xml_directory::String)
     end
 
     model_selection = parse_child(node, MODEL_SELECTION, parse_model_selection)
+    if length(model_selection) > 1 && length(data.discrete_inds) > 0 &&
+            !attr(node, FORCE_MODEL_SELECTION, Bool, default=false)
+
+        error("Model selection (i.e. automatically selecting the most " *
+              "appropriate number of factors) is not recommended when there " *
+              "are discrete traits. In these circumnstances, the presence of " *
+              "discrete traits artificially causes the inferred number of " *
+              "factors to be lower than they should be. In extreme cases, " *
+              "if there are many discrete traits, model selection is almost " *
+              "guaranteed to select only 1 factor regardless of the " *
+              "information in the data. To override this error and perform " *
+              "model selection with discrete traits, add the " *
+              "attribute $FORCE_MODEL_SELECTION=\"true\" to the $PFA xml block.")
+    end
 
     check_compatible(model_selection, prior)
 
@@ -171,6 +185,8 @@ const PERMUTATION = "permutation"
 const SVD = "svd"
 const POSTPROCESSING = "postprocessing"
 
+const FORCE_MODEL_SELECTION = "forceModelSelection"
+
 const KEYS = Dict{String, Vector{Pair{String, Symbol}}}(
     PFA =>
         [NAME => :name,
@@ -240,6 +256,12 @@ end
 
 function parse_model_selection(node::EzXML.Node)
     reps = attr(node, REPEATS, Int, default=10)
+
+    if (reps < 2)
+        error("cross-validation requires at least 2 repeats. Please set " *
+              "repeats=\"<some integer greater than 1>\" in the " *
+              "$MODEL_SELECTION xml block (although we recommend at least 4).")
+    end
     stats = attr(node, SELECTION_STAT, String, default = "CLPD")
     stats = string.(split(stats))
 
