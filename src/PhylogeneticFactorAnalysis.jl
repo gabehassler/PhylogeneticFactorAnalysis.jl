@@ -316,7 +316,9 @@ function run_pipeline(input::PipelineInput)
 
     dir = basedir(input)
     if isdir(dir) && !isempty(readdir(dir)) && !input.overwrite
-        error("Director \"$dir\" is not empty. Set TODO to overwrite.")
+        error("Director \"$dir\" is not empty. Either manually delete the " *
+              "directory or set $OVERWRITE=\"true\" in the $PFA xml block to " *
+              "automatically overwrite.")
     else
         mkpath(dir)
         mkpath(statistics_dir(input))
