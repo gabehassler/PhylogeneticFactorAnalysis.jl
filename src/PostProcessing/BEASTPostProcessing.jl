@@ -260,7 +260,7 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
             c[:, i] .= C_sub[:, :, i] * signs
         end
 
-        R = PostProcessing.optimize_one_trait(c)
+        R = PostProcessing.optimize_one_trait(c); @warn "NEED TO FIX THIS TO DEAL WITH NON-IDENTITY SUBMATRIX"
         R = R'
         optimized_rotation = zeros(dim_factor, dim_factor, n) # TODO: don't need to repeat same matrix over and over
         for i = 1:n
@@ -275,6 +275,7 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
                                  [:right, :both, :both, :both],
                                  [true, true, true, false],
                                  model_inds, dim_joint)
+        adjust_correlation!(C, V)
     end
 
     F_model = @view F[:, model_inds, :]
@@ -287,6 +288,19 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
              [L_labels => L, F_labels => F, C_labels => C,
              V_labels => V, Vr_labels => Vr, prop_labels => props']
             )
+end
+
+function adjust_correlation!(C::AbstractArray{Float64, 3},
+                             V::AbstractArray{Float64, 3})
+    n = size(C, 3)
+    for i = 1:n
+        C[:, :, i] .= cov2cor(V[:, :, i])
+    end
+end
+
+function cov2cor(Σ::AbstractMatrix{Float64})
+    D = sqrt.(inv(Diagonal(Σ)))
+    return D * Σ * D
 end
 
 
@@ -305,7 +319,7 @@ function rotate_multi_sem(log_path::String, rotate_path::String,
         plan::RotationPlan, parameters::JointParameters;
         burnin::Float64 = 0.0,
         minimum_map::Float64 = max(0.1 - burnin, 0.0),
-        use_map::Bool = true,
+        use_map::Bool = true, # maximum a posteriori estimate
         kw_args...)
 
     @unpack tree_dims, data_dims = parameters
