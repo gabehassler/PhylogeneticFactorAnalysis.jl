@@ -275,8 +275,9 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
                                  [:right, :both, :both, :both],
                                  [true, true, true, false],
                                  model_inds, dim_joint)
-        adjust_correlation!(C, V)
     end
+    adjust_correlation!(C, V)
+
 
     F_model = @view F[:, model_inds, :]
     update_proportions!(prop_df, F_model, L, prec, prop_header)
