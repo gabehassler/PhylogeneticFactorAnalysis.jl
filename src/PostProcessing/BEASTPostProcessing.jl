@@ -26,7 +26,10 @@ struct JointParameters
 end
 
 function subset_startswith(df::DataFrame, s::AbstractString)
-    inds = findall(x -> startswith(x, s), names(df))
+    # Construct the regular expression pattern to match `s` followed by numbers
+    pattern = r"^" * s * r".*\d+"
+    # Find the indices of column names that match the pattern
+    inds = findall(x -> occursin(pattern, x), names(df))
     return df[!, inds]
 end
 
@@ -224,8 +227,6 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
     end
 
 
-    prop_df = subset_startswith(df, prop_header)
-    @assert size(prop_df, 2) == 2 + dim_factor * 2
 
 
     final_rotation  = do_rotations!(plan, L, map_ind)
@@ -280,15 +281,25 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
 
 
     F_model = @view F[:, model_inds, :]
-    update_proportions!(prop_df, F_model, L, prec, prop_header)
 
-    prop_labels = names(prop_df)
-    props = Matrix(prop_df)
 
-    update_df!(df,
-             [L_labels => L, F_labels => F, C_labels => C,
-             V_labels => V, Vr_labels => Vr, prop_labels => props']
-            )
+    labs = [L_labels => L, F_labels => F, C_labels => C,
+            V_labels => V, Vr_labels => Vr]
+
+    prop_df = subset_startswith(df, prop_header)
+
+    if ncol(prop_df) > 0
+
+        @assert size(prop_df, 2) == 2 + dim_factor * 2
+        update_proportions!(prop_df, F_model, L, prec, prop_header)
+
+        prop_labels = names(prop_df)
+        props = Matrix(prop_df)
+        push!(labs, prop_labels => props')
+    end
+
+
+    update_df!(df, labs)
 end
 
 function adjust_correlation!(C::AbstractArray{Float64, 3},
