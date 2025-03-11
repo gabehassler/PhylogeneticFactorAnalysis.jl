@@ -132,6 +132,67 @@ function optimize(C::Array{Float64, 3}, f::Function; kwargs...)
     error("Not implemented for k = $k")
 end
 
+# function rotated_corr(Ri::AbstractVector{Float64}, Σrr::AbstractMatrix{Float64}, Σrj::AbstractVector{Float64})
+
+#     Σ̂ii = Ri' * Σrr * Ri
+#     Σ̂ij = Ri' * Σrj
+#     return Σ̂ij / sqrt(Σ̂ii)
+# end
+
+# function rotated_corr(Ri::AbstractVector{Float64}, Σrr::AbstractArray{Float64, 3}, Σrj::AbstractMatrix{Float64})
+#     k, _, n = size(Σrr)
+#     sum = zeros(k)
+#     for i = 1:n
+#         sum .+= rotated_corr(Ri, @view(Σrr[:, :, i]), @view(Σrj[:, i]))
+#     end
+#     return sum / n
+# end
+function rotated_corr_single(Ri, Σrr, Σrj, Σjj)
+    # @show size(Ri)
+    # @show Σrr
+    # @show Σrj
+    Σ̂ii = Ri' * Σrr * Ri
+    Σ̂ij = Ri' * Σrj
+    return Σ̂ij / sqrt(Σ̂ii * Σjj)
+end
+
+function rotated_corr(Ri, Σrr, Σrj, Σjj)
+    _, _, n = size(Σrr)
+    sum = 0.0
+    for i = 1:n
+        Σrri = @view Σrr[:, :, i]
+        Σrji = @view Σrj[:, i]
+        Σjji = Σjj[i]
+        sum += rotated_corr_single(Ri, Σrri, Σrji, Σjji)
+    end
+    return -sum / n
+end
+
+
+function optimize_correlation_from_variance(Σrr::Array{Float64, 3},
+        Σrj::Array{Float64, 2}, Σjj::Vector{Float64})
+    k, n = size(Σrj)
+    @show size(Σrj)
+
+    optf = OnceDifferentiable(r -> rotated_corr(r, Σrr, Σrj, Σjj), ones(k), autodiff=:forward)
+    manif = Optim.Sphere()
+    u0 = randn(k)
+    # @show u0
+    # error()
+    u0 = u0 / norm(u0)
+    opt = Optim.optimize(optf, u0, Optim.ConjugateGradient(manifold=manif))
+    display(opt)
+    r = Optim.minimizer(opt)
+    R = zeros(k, k)
+    R[1, :] .= r
+    if k > 1
+        R[2:k, :] .= nullspace(R[1, :]')'
+    end
+    return R
+end
+
+
+
 function optimize_one_trait(C::Array{Float64, 2}; kwargs...)
     @warn "Ignoring provided optimization function"
     c_mean = mean(C, dims=2)

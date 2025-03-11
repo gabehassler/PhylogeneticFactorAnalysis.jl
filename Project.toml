@@ -1,8 +1,7 @@
 name = "PhylogeneticFactorAnalysis"
 uuid = "88e69f3b-d3b7-48b0-a205-c3c72d2ca7ac"
 authors = ["Gabe Hassler <gabriel.w.hassler@gmail.com> and contributors"]
-version = "1.0"
-
+version = "1.1.0"
 
 [deps]
 BEASTXMLConstructor = "2ff12cca-58d7-407c-9ba2-24d4f684d922"
@@ -11,25 +10,20 @@ CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 Combinatorics = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 EzXML = "8f5d6c58-4d21-5cfd-889c-e3ad7ee6a615"
+ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 JLD = "4138dd39-2aa7-5051-a626-17a0bb65d9c8"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 RCall = "6f49c342-dc21-5d91-9882-a32aef131414"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 UnPack = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 
 [compat]
-BEASTXMLConstructor = "1"
-BeastUtils = "1"
-CSV = "0.8, 0.9, 0.10"
-Combinatorics = "1"
-DataFrames = "0.20, 0.21, 0.22, 1"
-EzXML = "1"
-JLD = "0.9, 0.10, 0.12, 0.13"
-RCall = "0.13"
-UnPack = "1"
-julia = "^1.3"
+Optim = "1.11.0"
+Revise = "3.7.2"
 
 [extras]
 SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"
