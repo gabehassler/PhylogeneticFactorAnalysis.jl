@@ -249,7 +249,7 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
             error("cannot optimize correlation within a model")
         end
 
-        @assert length(optimization_inds[model]) == 1 # TODO: generalize
+        # @assert length(optimization_inds[model]) == 1 # TODO: generalize
 
         if count(parameters.tree_dims .!= parameters.data_dims) > 1
             @warn "optimization with multiple factor models has not been tested"
@@ -263,13 +263,14 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
         #     c[:, i] .= C_sub[:, :, i] * signs
         # end
 
-        Vrr = V[model_inds, model_inds, :]
-        Vrj = V[model_inds, optimization_inds[model][1], :]
-        Vjj = V[optimization_inds[model][1], optimization_inds[model][1], :]
-        R = PostProcessing.optimize_correlation_from_variance(Vrr, Vrj, Vjj)
+        # Vrr = V[model_inds, model_inds, :]
+        # Vrj = V[model_inds, optimization_inds[model][1], :]
+        # Vjj = V[optimization_inds[model][1], optimization_inds[model][1], :]
+        # R = PostProcessing.optimize_correlation_from_variance(Vrr, Vrj, Vjj)
+        R = PostProcessing.optimize_correlation_from_variance(V, model_inds, optimization_inds[model])
 
         # R = PostProcessing.optimize_one_trait(c); @warn "NEED TO FIX THIS TO DEAL WITH NON-IDENTITY SUBMATRIX"
-        R = R'
+        # R = R'
         optimized_rotation = zeros(dim_factor, dim_factor, n) # TODO: don't need to repeat same matrix over and over
         for i = 1:n
             optimized_rotation[:, :, i] .= R

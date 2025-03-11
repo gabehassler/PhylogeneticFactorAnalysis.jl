@@ -147,49 +147,122 @@ end
 #     end
 #     return sum / n
 # end
-function rotated_corr_single(Ri, Σrr, Σrj, Σjj)
-    # @show size(Ri)
-    # @show Σrr
-    # @show Σrj
-    Σ̂ii = Ri' * Σrr * Ri
-    Σ̂ij = Ri' * Σrj
-    return Σ̂ij / sqrt(Σ̂ii * Σjj)
-end
+# function rotated_corr_single(Ri, Σrr, Σrj, Σjj)
+#     # @show size(Ri)
+#     # @show Σrr
+#     # @show Σrj
+#     Σ̂ii = Ri' * Σrr * Ri
+#     Σ̂ij = Ri' * Σrj
+#     return Σ̂ij / sqrt(Σ̂ii * Σjj)
+# end
 
-function rotated_corr(Ri, Σrr, Σrj, Σjj)
-    _, _, n = size(Σrr)
-    sum = 0.0
-    for i = 1:n
-        Σrri = @view Σrr[:, :, i]
-        Σrji = @view Σrj[:, i]
-        Σjji = Σjj[i]
-        sum += rotated_corr_single(Ri, Σrri, Σrji, Σjji)
+# function rotated_corr(Ri, Σrr, Σrj, Σjj)
+#     _, _, n = size(Σrr)
+#     sum = 0.0
+#     for i = 1:n
+#         Σrri = @view Σrr[:, :, i]
+#         Σrji = @view Σrj[:, i]
+#         Σjji = Σjj[i]
+#         sum += rotated_corr_single(Ri, Σrri, Σrji, Σjji)
+#     end
+#     return -sum / n
+# end
+
+function optimize_correlation_from_variance(Σ::Array{Float64, 3},
+        rot_inds::AbstractVector{Int},
+        target_inds::AbstractVector{Int})
+
+    if !isempty(intersect(rot_inds, target_inds))
+        error("not yet implemented") # is probably fine but need to check
     end
-    return -sum / n
-end
 
+    k, _, n = size(Σ)
 
-function optimize_correlation_from_variance(Σrr::Array{Float64, 3},
-        Σrj::Array{Float64, 2}, Σjj::Vector{Float64})
-    k, n = size(Σrj)
-    @show size(Σrj)
-
-    optf = OnceDifferentiable(r -> rotated_corr(r, Σrr, Σrj, Σjj), ones(k), autodiff=:forward)
-    manif = Optim.Sphere()
-    u0 = randn(k)
-    # @show u0
-    # error()
-    u0 = u0 / norm(u0)
-    opt = Optim.optimize(optf, u0, Optim.ConjugateGradient(manifold=manif))
-    display(opt)
-    r = Optim.minimizer(opt)
-    R = zeros(k, k)
-    R[1, :] .= r
-    if k > 1
-        R[2:k, :] .= nullspace(R[1, :]')'
+    if length(target_inds) > k
+        error("cannot target more indices than there are dimensions")
     end
-    return R
+
+    kr = length(rot_inds)
+
+    R = zeros(kr, 0)
+    for ind in target_inds
+        if size(R, 2) == kr - 1
+            r = nullspace(R')
+            @show mean(r' * Σ[rot_inds, ind, i] for i = 1:n)
+            if mean(r' * Σ[rot_inds, ind, i] for i = 1:n)[1] < 0
+                r = -r
+            end
+        else
+            r = optimize_correlation_from_variance(Σ, rot_inds, ind, R)
+        end
+        R = [R r]
+    end
+
+    if size(R, 2) < kr
+        R = [R nullspace(R')]
+    end
+
+    @assert R' * R ≈ I
+
+    R
 end
+
+function optimize_correlation_from_variance(Σ::Array{Float64, 3},
+        rot_inds::AbstractVector{Int},
+        target_ind::Int,
+        R::Matrix{Float64})
+
+    k, _, n = size(Σ)
+
+    @show rot_inds
+    @show target_ind
+
+    model = Model(Ipopt.Optimizer)
+    set_silent(model)
+    kr = length(rot_inds)
+
+    @variable(model, r[1:kr])
+    @variable(model, -1 <= c[1:n] <= 1)
+    @variable(model, Σii[1:n] >= 0 + 1e-5)
+    @variable(model, Σij[1:n])
+    @constraint(model, Σii == [r' * Σ[rot_inds, rot_inds, i] * r for i in 1:n])
+    @constraint(model, Σij == [r' * Σ[rot_inds, target_ind, i] for i in 1:n])
+    @constraint(model, c == [Σij[i] / sqrt(Σii[i] * Σ[target_ind, target_ind, i]) for i in 1:n])
+    @constraint(model, sum(r.^2) == 1)
+
+    m = size(R, 2)
+    for i = 1:m
+        @constraint(model, r' * R[:, i] == 0)
+    end
+
+    @objective(model, Max, sum(c))
+    optimize!(model)
+    assert_is_solved_and_feasible(model)
+    return(value.(r))
+end
+
+
+# function optimize_correlation_from_variance(Σrr::Array{Float64, 3},
+#         Σrj::Array{Float64, 2}, Σjj::Vector{Float64})
+#     k, n = size(Σrj)
+#     @show size(Σrj)
+
+#     optf = OnceDifferentiable(r -> rotated_corr(r, Σrr, Σrj, Σjj), ones(k), autodiff=:forward)
+#     manif = Optim.Sphere()
+#     u0 = randn(k)
+#     # @show u0
+#     # error()
+#     u0 = u0 / norm(u0)
+#     opt = Optim.optimize(optf, u0, Optim.ConjugateGradient(manifold=manif))
+#     display(opt)
+#     r = Optim.minimizer(opt)
+#     R = zeros(k, k)
+#     R[1, :] .= r
+#     if k > 1
+#         R[2:k, :] .= nullspace(R[1, :]')'
+#     end
+#     return R
+# end
 
 
 

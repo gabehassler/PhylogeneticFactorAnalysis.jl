@@ -30,8 +30,10 @@ export cluster,
        induce_block_independence!
 
 using LinearAlgebra, UnPack, Combinatorics, Statistics
-using Optim
-using ForwardDiff
+# using Optim
+# using ForwardDiff
+using JuMP
+using Ipopt
 
 
 abstract type Transform end
