@@ -335,7 +335,12 @@ function is_factor(j::JointParameters, ind::Int)
     return j.tree_dims[ind] != j.data_dims[ind]
 end
 
-function rotate_multi_sem(log_path::String, rotate_path::String,
+function rotate_multi_sem(log_path::String, args...; burnin::Float64 = 0.0, kwargs...)
+    df = import_log(log_path, burnin=burnin)
+    rotate_multi_sem!(df, args...; kwargs...)
+end
+
+function rotate_multi_sem!(df::DataFrame, rotate_path::String,
         plan::RotationPlan, parameters::JointParameters;
         burnin::Float64 = 0.0,
         minimum_map::Float64 = max(0.1 - burnin, 0.0),
@@ -346,7 +351,7 @@ function rotate_multi_sem(log_path::String, rotate_path::String,
     q = sum(tree_dims)
     m = length(parameters)
 
-    df = import_log(log_path, burnin=burnin)
+    # df = import_log(log_path, burnin=burnin)
     n = size(df, 1)
 
     map_ind = 0
@@ -363,7 +368,98 @@ function rotate_multi_sem(log_path::String, rotate_path::String,
         end
     end
     CSV.write(rotate_path, df, delim = '\t')
-    df = nothing
+    # df = nothing
+end
+
+function factor_summaries(df::DataFrame, parameters::JointParameters;
+        F_header::AbstractString = parameters.joint_name,
+        kwargs...)
+
+    m = length(parameters)
+    s = size(df, 1)
+
+
+    dim_joint = sum(parameters.tree_dims)
+    n_taxa = parameters.n_taxa
+
+    fac_inds = findall(parameters.tree_dims .!= parameters.data_dims)
+
+    n = sum(parameters.tree_dims[fac_inds] .* parameters.data_dims[fac_inds])
+
+    F, F_labels = collect_matrix(df, F_header, dim_joint, n_taxa,
+    transpose = true)
+
+    taxon_regex = Regex("$(F_header)\\.(.+)\\.(\\d+)\$")
+    taxa = [match(taxon_regex, x)[1] for x in F_labels[:, 1]]
+    for i in 1:dim_joint
+        for j in 1:n_taxa
+            @assert F_labels[j, i] == "$F_header.$(taxa[j]).$i"
+        end
+    end
+
+    ydf = DataFrame(model = Vector{String}(undef, n),
+                    factor = fill(0, n),
+                    trait = fill(0, n),
+                    mean = fill(NaN, n),
+                    max = fill(NaN, n),
+                    min = fill(NaN, n)
+                    )
+
+    fac_offset = 0
+    y_offset = 0
+
+
+
+    for i in fac_inds
+        trait_name = parameters.trait_names[i]
+        L_header = "$(trait_name).$L_HEADER" # TODO: allow for different headers
+
+        dim_factor = parameters.tree_dims[i]
+
+        factor_inds = fac_offset .+ (1:dim_factor)
+
+        dim_trait = parameters.data_dims[i]
+
+        fac_offset += dim_factor
+
+        L, L_labels = collect_matrix(df, L_header, dim_trait, dim_factor)
+        @show size(L)
+        @show size(F)
+
+        Fi = @view F[:, factor_inds, :]
+        F_mean = reshape(mean(Fi, dims = 1), dim_factor, s)
+        F_max = reshape(maximum(Fi, dims = 1), dim_factor, s)
+        F_min = reshape(minimum(Fi, dims = 1), dim_factor, s)
+
+
+        for j = 1:dim_factor
+
+            for k = 1:dim_trait
+                y_offset += 1
+
+                μ = mean(L[k, j, :] .* F_mean[j, :])
+                mx = mean(L[k, j, :] .* F_max[j, :])
+                mn = mean(L[k, j, :] .* F_min[j, :])
+
+                ydf[y_offset, :model] = trait_name
+                ydf[y_offset, :factor] = j
+                ydf[y_offset, :trait] = k
+                ydf[y_offset, :mean] = μ
+                ydf[y_offset, :max] = mx
+                ydf[y_offset, :min] = mn
+
+            end
+        end
+
+
+
+
+
+    end
+
+    return ydf
+
+
 end
 
 function post_process(log_path::String,
@@ -375,6 +471,7 @@ function post_process(log_path::String,
                                                    ProcrustesRotation),
                       joint_name::String = "",
                       use_map::Bool = true, # MAP = maximum a posteriori estimate
+                      burnin::Float64 = 0.0,
                       kwargs...
                       )
 
@@ -386,14 +483,22 @@ function post_process(log_path::String,
 
     params = JointParameters(tree_dims, data_dims, trait_names, joint_name, n_taxa)
 
+    df = import_log(log_path, burnin = burnin)
 
-    rotate_multi_sem(log_path, rotated_path,
+    @show kwargs
+
+
+    rotate_multi_sem!(df, rotated_path,
            rotation_plan,
            params,
            double_check = true,
            use_map = use_map;
            optimization_inds = optimization_inds,
+           burnin = burnin,
            kwargs...)
+
+    return factor_summaries(df, params)
+
     return nothing
 end
 
