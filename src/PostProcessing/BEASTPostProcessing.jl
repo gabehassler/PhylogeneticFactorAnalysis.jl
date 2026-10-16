@@ -174,7 +174,8 @@ end
 
 function rotate_submodel!(df::DataFrame, parameters::JointParameters,
         plan::RotationPlan,
-        model::Int;
+        model::Int,
+        needs_processing::Vector{Bool};
         map_ind::Int = 0,
         double_check::Bool = false,
         optimization_inds::Vector{Vector{Int}},
@@ -234,6 +235,10 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
     offset = sum(parameters.tree_dims[1:(model - 1)])
     model_inds = (offset + 1):(offset + dim_factor)
     other_inds = setdiff(1:dim_joint, model_inds)
+    offsets = [0; cumsum(parameters.tree_dims[1:(end - 1)])]
+    m = length(parameters)
+    all_model_inds = [offsets[i] .+ (1:parameters.tree_dims[i]) for i in 1:m]
+    model_map = [findfirst(x -> i in all_model_inds[x], 1:m) for i = 1:sum(parameters.tree_dims)]
 
     rotate_other_parameters!([F, C, V, Vr], final_rotation,
                              [false, false, false, false],
@@ -254,6 +259,12 @@ function rotate_submodel!(df::DataFrame, parameters::JointParameters,
         if count(parameters.tree_dims .!= parameters.data_dims) > 1
             @warn "optimization with multiple factor models has not been tested"
         end
+
+        if any(needs_processing[model_map[abs.(optimization_inds[model])]])
+            error("cannot optimize correlation with a model that still needs processing")
+        end
+
+
         # C_sub = C[model_inds, abs.(optimization_inds[model]), :]
         # c = zeros(dim_factor, n)
         # signs = sign.(optimization_inds[model])
@@ -345,11 +356,14 @@ function rotate_multi_sem!(df::DataFrame, rotate_path::String,
         burnin::Float64 = 0.0,
         minimum_map::Float64 = max(0.1 - burnin, 0.0),
         use_map::Bool = true, # maximum a posteriori estimate
+        rotation_order = 1:length(parameters),
         kw_args...)
 
     @unpack tree_dims, data_dims = parameters
     q = sum(tree_dims)
     m = length(parameters)
+
+    @assert sort(rotation_order) == 1:m
 
     # df = import_log(log_path, burnin=burnin)
     n = size(df, 1)
@@ -360,11 +374,13 @@ function rotate_multi_sem!(df::DataFrame, rotate_path::String,
         map_ind = findmax(df.joint[(map_offset + 1):end])[2] + map_offset
     end
 
+    needs_processing = [is_factor(parameters, i) for i = 1:m]
 
-    for i = 1:m
-        if is_factor(parameters, i)
-            rotate_submodel!(df, parameters, plan, i; map_ind = map_ind,
+    for i in rotation_order
+        if needs_processing[i]
+            rotate_submodel!(df, parameters, plan, i, needs_processing; map_ind=map_ind,
                     kw_args...)
+            needs_processing[i] = false
         end
     end
     CSV.write(rotate_path, df, delim = '\t')
@@ -472,6 +488,7 @@ function post_process(log_path::String,
                       joint_name::String = "",
                       use_map::Bool = true, # MAP = maximum a posteriori estimate
                       burnin::Float64 = 0.0,
+                      rotation_order = 1:length(traits),
                       kwargs...
                       )
 
@@ -495,6 +512,7 @@ function post_process(log_path::String,
            use_map = use_map;
            optimization_inds = optimization_inds,
            burnin = burnin,
+           rotation_order = rotation_order,
            kwargs...)
 
     return factor_summaries(df, params)
